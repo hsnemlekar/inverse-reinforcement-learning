@@ -37,15 +37,18 @@ weights = [[0.60, 0.20, 0.20],
            [0.20, 0.40, 0.40],
            [0.40, 0.30, 0.30],
            [0.30, 0.40, 0.30],
-           [0.50, 0.30, 0.20],
-           [0.50, 0.20, 0.30],
-           [0.30, 0.50, 0.20],
-           [0.20, 0.50, 0.30],
-           [0.30, 0.20, 0.50],
-           [0.20, 0.30, 0.50]]
+           [0.30, 0.30, 0.40],
+           [0.60, 0.30, 0.10],
+           [0.60, 0.10, 0.30],
+           [0.30, 0.60, 0.10],
+           [0.10, 0.60, 0.30],
+           [0.30, 0.10, 0.60],
+           [0.10, 0.30, 0.60],
+           [0.25, 0.35, 0.40],
+           [0.33, 0.33, 0.33]]
 
 adversarial_weights = np.array(weights)
-adversarial_weights[:, [0, 1, 2]] = adversarial_weights[:, [2, 0, 1]]
+adversarial_weights[:, [0, 1, 2]] = adversarial_weights[:, [1, 0, 2]]
 
 canonical_actions = list(range(len(canonical_features)))
 complex_actions = list(range(len(complex_features)))
@@ -55,14 +58,14 @@ C = CanonicalTask(canonical_features)
 C.set_end_state(canonical_actions)
 C.enumerate_states()
 C.set_terminal_idx()
-all_canonical_trajectories = C.enumerate_trajectories([canonical_actions])
+# all_canonical_trajectories = C.enumerate_trajectories([canonical_actions])
 
 # initialize actual task
 X = ComplexTask(complex_features)
 X.set_end_state(complex_actions)
 X.enumerate_states()
 X.set_terminal_idx()
-all_complex_trajectories = X.enumerate_trajectories([complex_actions])
+# all_complex_trajectories = X.enumerate_trajectories([complex_actions])
 
 # loop over all users
 canonical_demos, complex_demos = [], []
@@ -94,7 +97,7 @@ for i in range(len(weights)):
 np.savetxt("data/user_demos/weights.csv", weights)
 np.savetxt("data/user_demos/canonical_demos.csv", canonical_demos)
 np.savetxt("data/user_demos/complex_demos.csv", complex_demos)
-pickle.dump(all_canonical_trajectories, open("data/user_demos/canonical_trajectories.csv", "wb"))
-pickle.dump(all_complex_trajectories, open("data/user_demos/complex_trajectories.csv", "wb"))
+# pickle.dump(all_canonical_trajectories, open("data/user_demos/canonical_trajectories.csv", "wb"))
+# pickle.dump(all_complex_trajectories, open("data/user_demos/complex_trajectories.csv", "wb"))
 
 print("Done.")

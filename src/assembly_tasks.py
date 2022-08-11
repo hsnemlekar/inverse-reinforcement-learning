@@ -105,7 +105,7 @@ class AssemblyTask:
             feature_value = [phase * e_p, phase * e_m, (1.0 - phase) * e_p, (1.0 - phase) * e_m, c_part, c_tool,
                              self.features[curr_a][2]]
         else:
-            feature_value = [phase * e_p, phase * e_m, (1.0 - phase) * e_p, (1.0 - phase) * e_m, c_part, c_tool]
+            feature_value = [phase * e_p, phase * e_m, (1.0 - phase) * e_p, (1.0 - phase) * e_m, c_tool]
 
         if new_feature:
             if curr_a == 0 and state[1] == 0:

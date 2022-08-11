@@ -213,3 +213,43 @@ class ComplexTask(AssemblyTask):
         else:
             return p, None
 
+
+# ------------------------------------------------ Complex Task ----------------------------------------------------- #
+
+class LongTask(AssemblyTask):
+    """
+    Actions:
+
+    """
+
+    @staticmethod
+    def transition(s_from, a):
+        # preconditions
+        if s_from[a] < 1:
+            prob = 1.0
+        else:
+            prob = 0.0
+
+        # transition to next state
+        if prob == 1.0:
+            s_to = deepcopy(s_from)
+            s_to[a] += 1
+            return prob, s_to
+        else:
+            return prob, None
+
+    @staticmethod
+    def back_transition(s_to, a):
+        # preconditions
+        if s_to[a] > 0:
+            p = 1.0
+        else:
+            p = 0.0
+
+        # transition to next state
+        if p == 1.0:
+            s_from = deepcopy(s_to)
+            s_from[a] -= 1
+            return p, s_from
+        else:
+            return p, None

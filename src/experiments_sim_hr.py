@@ -18,10 +18,10 @@ from scipy import stats
 
 # pre-process feature value
 def process_val(x):
-    if x == "1 (No effort at all)":
-        x = 1.1
-    elif x == "7 (A lot of effort)":
-        x = 6.9
+    if x == "1 (No effort at all)" or x == "1 (No space at all)":
+        x = 1.01
+    elif x == "7 (A lot of effort)" or x == "7 (A lot of space)":
+        x = 6.99
     else:
         x = float(x)
 
@@ -46,8 +46,8 @@ def load_features(data, user_idx, feature_idx, action_idx):
 # select algorithm
 run_maxent = True
 run_bayes = False
-run_random_actions = True
-run_random_weights = True
+run_random_actions = False
+run_random_weights = False
 online_learning = True
 
 # algorithm parameters
@@ -60,14 +60,14 @@ test_complex = False
 
 # select samples
 n_train_samples = 1000
-n_test_samples = 20
+n_test_samples = 1
 
 # -------------------------------------------------- Load data ------------------------------------------------------ #
 
 # download data from qualtrics
 learning_survey_id = "SV_8eoX63z06ZhVZRA"
 data_path = os.path.dirname(__file__) + "/data/"
-# get_qualtrics_survey(dir_save_survey=data_path, survey_id=learning_survey_id)
+get_qualtrics_survey(dir_save_survey=data_path, survey_id=learning_survey_id)
 
 # load user data
 demo_path = data_path + "Human-Robot Assembly - Learning.csv"
@@ -82,9 +82,8 @@ predict_scores, random1_scores, random2_scores, worst_scores = [], [], [], []
 weights, final_weights = [], []
 
 # users to consider for evaluation
-# users = [7, 8, 9, 10, 14, 19, 20, 21, 22, 23]
-# users = [15, 16, 17, 18, 24]
-users = [27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 10, 9, 8, 7]
+# users = [7, 8, 9, 10, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+users = [31, 32, 33, 34, 35, 36, 37, 38, 39, 40]
 n_users = len(users)
 
 # iterate over each user
@@ -98,10 +97,12 @@ for ui, user_id in enumerate(users):
     # user ratings for canonical task features
     canonical_q, complex_q = ["Q6_", "Q7_"], ["Q13_", "Q14_", "Q38_"]
     canonical_feature_values = load_features(df, idx, canonical_q, [2, 4, 6, 3, 5, 7])
+    # canonical_feature_values = load_features(df, idx, canonical_q, [1, 3, 5, 2, 4, 6])
 
     # user ratings for actual task features
     _, n_shared_feature_values = np.shape(canonical_feature_values)
     complex_feature_values = load_features(df, idx, complex_q, [3, 8, 15, 16, 4, 9, 10, 11])
+    # complex_feature_values = load_features(df, idx, complex_q, [1, 3, 7, 8, 2, 4, 5, 6])
     shared_feature_values = [val[:n_shared_feature_values] for val in complex_feature_values]
 
     # load canonical task demonstration
@@ -123,6 +124,7 @@ for ui, user_id in enumerate(users):
     # canonical demonstration for training
     canonical_user_demo = [canonical_demo]
     canonical_trajectories = get_trajectories(C.states, canonical_user_demo, C.transition)
+    print("Canonical demo:", canonical_user_demo)
 
     # precompute trajectories for bayesian inference
     if run_bayes:
@@ -168,6 +170,7 @@ for ui, user_id in enumerate(users):
     # complex demonstrations for testing (ground truth)
     complex_user_demo = [complex_demo]
     complex_trajectories = get_trajectories(X.states, complex_user_demo, X.transition)
+    print("Complex demo:", complex_user_demo)
 
     if run_bayes:
         if exists("data/pilot_demos/complex_trajectories.csv"):
@@ -398,7 +401,7 @@ for ui, user_id in enumerate(users):
 
             random_score.append(r_score)
 
-        np.savetxt("results/corl/06-11/user" + user_id + "_random_online_new.csv", random_score)
+        np.savetxt("results/corl/06-12/user" + user_id + "_random_online_new.csv", random_score)
         worst_score = min(np.mean(random_score, axis=1))
         random_score = np.mean(random_score, axis=0)
         random2_scores.append(random_score)
@@ -412,15 +415,15 @@ if run_bayes:
     np.savetxt(save_path + "weights" + str(n_users) + "_norm_feat_bayes.csv", weights)
     np.savetxt(save_path + "predict" + str(n_users) + "_norm_feat_bayes.csv", predict_scores)
 
-if run_maxent:
-    np.savetxt(save_path + "weights" + str(n_users) + "_maxent_online_rand_new.csv", weights)
-    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_online_rand_new.csv", predict_scores)
+# if run_maxent:
+#     np.savetxt(save_path + "weights" + str(n_users) + "_maxent_uni_online_rand_rem.csv", weights)
+#     np.savetxt(save_path + "predict" + str(n_users) + "_maxent_uni_online_rand_rem.csv", predict_scores)
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random1_scores)
 
 if run_random_weights:
-    np.savetxt(save_path + "random" + str(n_users) + "_weights_online_rand_new.csv", random2_scores)
-    np.savetxt(save_path + "worst" + str(n_users) + "_online_rand_new.csv", worst_scores)
+    np.savetxt(save_path + "random" + str(n_users) + "_weights_online_rand_add.csv", random2_scores)
+    np.savetxt(save_path + "worst" + str(n_users) + "_online_rand_add.csv", worst_scores)
 
 print("Done.")

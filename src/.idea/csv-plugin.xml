@@ -3,6 +3,13 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
+        <entry key="C:\Users\heram\AppData\Local\Programs\Python\Python38\Lib\zipfile.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\airplane_assembly.py">
           <value>
             <Attribute>
@@ -45,7 +52,28 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\compute_weights.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\experiments.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\experiments_sim.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\experiments_sim_hr.py">
           <value>
             <Attribute>
               <option name="separator" value="," />
@@ -67,6 +95,13 @@
           </value>
         </entry>
         <entry key="\plot_figures.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\simulate_users.py">
           <value>
             <Attribute>
               <option name="separator" value="," />
