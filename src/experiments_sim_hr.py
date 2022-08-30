@@ -48,7 +48,7 @@ run_maxent = True
 run_bayes = False
 run_random_actions = False
 run_random_weights = False
-online_learning = True
+online_learning = False
 
 # algorithm parameters
 map_estimate = True
@@ -83,7 +83,24 @@ weights, final_weights = [], []
 
 # users to consider for evaluation
 # users = [7, 8, 9, 10, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
-users = [31, 32, 33, 34, 35, 36, 37, 38, 39, 40]
+users = [31, 32, 33, 34, 35, 36, 37, 39, 40, 41, 52, 53, 54, 55, 56, 57, 58]
+pref = [["part"],
+        ["space"],
+        ["space"],
+        [],
+        ["space"],
+        [],
+        [],
+        [],
+        ["part", "space"],
+        ["space"],
+        ["part", "space"],
+        ["part"],
+        ["part", "space"],
+        ["part"],
+        ["part", "space"],
+        ["part", "space"],
+        []]
 n_users = len(users)
 
 # iterate over each user
@@ -321,7 +338,7 @@ for ui, user_id in enumerate(users):
                                                                                   transferred_weight,
                                                                                   shared_features,
                                                                                   complex_features,
-                                                                                  [], [],
+                                                                                  [], pref[ui],
                                                                                   optim, init,
                                                                                   user_id,
                                                                                   sensitivity=0.0,
@@ -415,9 +432,9 @@ if run_bayes:
     np.savetxt(save_path + "weights" + str(n_users) + "_norm_feat_bayes.csv", weights)
     np.savetxt(save_path + "predict" + str(n_users) + "_norm_feat_bayes.csv", predict_scores)
 
-# if run_maxent:
-#     np.savetxt(save_path + "weights" + str(n_users) + "_maxent_uni_online_rand_rem.csv", weights)
-#     np.savetxt(save_path + "predict" + str(n_users) + "_maxent_uni_online_rand_rem.csv", predict_scores)
+if run_maxent:
+    np.savetxt(save_path + "weights" + str(n_users) + "_maxent_uni.csv", weights)
+    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_uni.csv", predict_scores)
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random1_scores)

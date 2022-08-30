@@ -8,7 +8,7 @@ import pingouin as pg
 from import_qualtrics import get_qualtrics_survey
 
 # ---------------------------------------------------- Result ------------------------------------------------------- #
-sim = False
+sim = True
 print_subjective = False
 plot_subjective = False
 plot_time = False
@@ -109,24 +109,32 @@ for i, q_idx in enumerate(plot_q):
 
 dir_path = os.path.dirname(__file__)
 if sim:
-    file_path = dir_path + "/results/corl_sim/"
-    prior1_scores = np.loadtxt(file_path + "predict17_maxent_uni.csv")
-    predict1_scores = np.loadtxt(file_path + "predict17_maxent_online_uni.csv")
-    random1_scores = np.loadtxt(file_path + "random17_weights_online.csv")
+    file_path = dir_path + "/results/corl_sim_copy/"
+    prior1_scores = np.loadtxt(file_path + "predict20_maxent_uni.csv")
+    predict1_scores = np.loadtxt(file_path + "predict20_maxent_new_online.csv")
+    random1_scores = np.loadtxt(file_path + "random20_weights_new_online.csv")
 
-    prior2_scores = np.loadtxt(file_path + "predict17_maxent_uni_less_noisy.csv")
-    predict2_scores = np.loadtxt(file_path + "predict17_maxent_uni_online_less_noisy.csv")
-    random2_scores = np.loadtxt(file_path + "random17_weights_online_less_noisy.csv")
+    prior2_scores = np.loadtxt(file_path + "predict20_maxent_uni_noisy1.csv")
+    predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy1.csv")
+    random2_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy1.csv")
 
-    prior3_scores = np.loadtxt(file_path + "predict17_maxent_uni_less_noisy2.csv")
-    predict3_scores = np.loadtxt(file_path + "predict17_maxent_uni_online_less_noisy2.csv")
-    random3_scores = np.loadtxt(file_path + "random17_weights_online_less_noisy2.csv")
+    prior3_scores = np.loadtxt(file_path + "predict20_maxent_uni_noisy2.csv")
+    predict3_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy2.csv")
+    random3_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy2.csv")
+
+    prior4_scores = np.loadtxt(file_path + "predict20_maxent_uni_noisy3.csv")
+    predict4_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy3.csv")
+    random4_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy3.csv")
+
+    prior5_scores = np.loadtxt(file_path + "predict20_maxent_uni_noisy4.csv")
+    predict5_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy4.csv")
+    random5_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy4.csv")
 else:
     file_path = dir_path + "/results/corl/"
-    predict1_scores = np.loadtxt(file_path + "06-12/predict20_maxent_uni_online_rand_new.csv")
-    predict2_scores = np.loadtxt(file_path + "06-12/predict20_maxent_uni.csv")
-    random1_scores = np.loadtxt(file_path + "06-12/random20_weights_online_rand_new.csv")
-    random2_scores = np.loadtxt(file_path + "06-12/random20_actions.csv")
+    predict1_scores = np.loadtxt(file_path + "predict17_maxent_new_online_add.csv")
+    predict2_scores = np.loadtxt(file_path + "predict17_maxent_new_online.csv")
+    random1_scores = np.loadtxt(file_path + "random17_weights_new_online_add.csv")
+    random2_scores = np.loadtxt(file_path + "predict17_maxent_uni.csv")
 
 # ------------------------------------------------- Time taken ------------------------------------------------------ #
 
@@ -155,24 +163,25 @@ if plot_time:
     # plt.savefig("figures/corl/idle_time.png", bbox_inches='tight')
 
 # --------------------------------------------- Action anticipation ------------------------------------------------- #
+add = True
+if not sim and not add:
+    # Split for adding feature
+    # predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
+    # predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
+    # random1_scores = [s for i, s in enumerate(random1_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
+    # random2_scores = [s for i, s in enumerate(random2_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
 
-# Split for adding feature
-# predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
-# predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
-# random1_scores = [s for i, s in enumerate(random1_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
-# random2_scores = [s for i, s in enumerate(random2_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
+    # Split for comparing to random prior
+    # predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
+    # predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
+    # random1_scores = [s for i, s in enumerate(random1_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
+    # random2_scores = [s for i, s in enumerate(random2_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
 
-# Split for comparing to random prior
-# predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
-# predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
-# random1_scores = [s for i, s in enumerate(random1_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
-# random2_scores = [s for i, s in enumerate(random2_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
-
-# All users
-predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
-predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
-random1_scores = [s for i, s in enumerate(random1_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
-random2_scores = [s for i, s in enumerate(random2_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
+    # All users
+    predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
+    predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
+    random1_scores = [s for i, s in enumerate(random1_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
+    random2_scores = [s for i, s in enumerate(random2_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
 
 n_users, n_steps = np.shape(predict1_scores)
 
@@ -183,11 +192,18 @@ random1_users = list(np.sum(random1_scores, axis=1)/n_steps)
 random2_users = list(np.sum(random2_scores, axis=1)/n_steps)
 if sim:
     predict3_users = list(np.sum(predict3_scores, axis=1) / n_steps)
+    predict4_users = list(np.sum(predict4_scores, axis=1) / n_steps)
+    predict5_users = list(np.sum(predict5_scores, axis=1) / n_steps)
+
     random3_users = list(np.sum(random3_scores, axis=1) / n_steps)
+    random4_users = list(np.sum(random4_scores, axis=1) / n_steps)
+    random5_users = list(np.sum(random5_scores, axis=1) / n_steps)
 
     prior1_users = list(np.sum(prior1_scores, axis=1) / n_steps)
     prior2_users = list(np.sum(prior2_scores, axis=1) / n_steps)
     prior3_users = list(np.sum(prior3_scores, axis=1) / n_steps)
+    prior4_users = list(np.sum(prior4_scores, axis=1) / n_steps)
+    prior5_users = list(np.sum(prior5_scores, axis=1) / n_steps)
 
 print("predict 1:", predict1_users)
 print("predict 2:", predict2_users)
@@ -211,9 +227,12 @@ else:
     print("random:", np.mean(predict1_users), stats.sem(predict1_users),
           np.mean(random1_users), stats.sem(random1_users),
           stats.ttest_rel(predict1_users, random1_users))
-    print(" prior:", np.mean(predict1_users), stats.sem(predict1_users),
+    print("online:", np.mean(predict1_users), stats.sem(predict1_users),
           np.mean(predict2_users), stats.sem(predict2_users),
           stats.ttest_rel(predict1_users, predict2_users))
+    print(" prior:", np.mean(predict1_users), stats.sem(predict1_users),
+          np.mean(random2_users), stats.sem(random2_users),
+          stats.ttest_rel(predict1_users, random2_users))
 
 plot_bar = True
 cp = sns.color_palette()
@@ -221,11 +240,19 @@ cp = sns.color_palette()
 if plot_bar:
     if sim:
         plt.figure(figsize=(9, 5))
-        X = ["consistent"]*3*n_users + ["case i"]*3*n_users + ["case ii"]*3*n_users
+        X = ["consistent"]*3*n_users + \
+            ["0.1"]*3*n_users + \
+            ["0.2"]*3*n_users + \
+            ["0.3"]*3*n_users + \
+            ["0.4"]*3*n_users
         Y = list(prior1_users) + list(random1_users) + list(predict1_users) + \
             list(prior2_users) + list(random2_users) + list(predict2_users) + \
-            list(prior3_users) + list(random3_users) + list(predict3_users)
+            list(prior3_users) + list(random3_users) + list(predict3_users) + \
+            list(prior4_users) + list(random4_users) + list(predict4_users) + \
+            list(prior5_users) + list(random5_users) + list(predict5_users)
         Z = ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users + \
+            ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users + \
+            ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users + \
             ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users + \
             ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users
         sns.barplot(x=X, y=Y, hue=Z, ci=68, errwidth=2, capsize=.1)
@@ -239,19 +266,19 @@ if plot_bar:
         # plt.savefig("figures/corl/sim.png", bbox_inches='tight')
         plt.show()
     else:
-        plt.figure()
-        X = ["prior"] * n_users + ["online+add"] * n_users
-        Y = list(predict2_users) + list(predict1_users)
-        sns.barplot(x=X, y=Y, ci=68, errwidth=2, capsize=.1, palette=[cp[1], "g"])
+        plt.figure(figsize=(9, 5))
+        X = ["prior"] * n_users + ["online"] * n_users + ["rand-add"] * n_users + ["online-add"] * n_users
+        Y = list(random2_users) + list(predict2_users) + list(random1_users) + list(predict1_users)
+        sns.barplot(x=X, y=Y, ci=68, errwidth=2, capsize=.1, palette=["b", "g", cp[1], "r"])
         # sns.boxplot(x=X, y=Y)  # ci=68, errwidth=2, capsize=.1)
-        # plt.ylim(0.5, 1.)
+        # plt.ylim(0., 1.0)
         plt.xticks(fontsize=18)
         plt.yticks(fontsize=16)
         plt.ylabel("Accuracy", fontsize=18)
         # plt.legend(fontsize=18, ncol=2, loc=9)
         plt.gcf().subplots_adjust(bottom=0.175)
         plt.gcf().subplots_adjust(left=0.175)
-        # plt.savefig("figures/corl/add_space.png", bbox_inches='tight')
+        # plt.savefig("figures/corl/add.png", bbox_inches='tight')
         plt.show()
 else:
     # accuracy over all users at each time step

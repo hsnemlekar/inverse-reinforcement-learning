@@ -321,7 +321,7 @@ def predict_trajectory(qf, states, demos, transition_function, sensitivity=0, co
 # ------------------------------------------------- Contribution ---------------------------------------------------- #
 
 def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, weights, features, add_features,
-                              samples, priors, optim, init, user_id, sensitivity=0, consider_options=False):
+                              samples, pref, optim, init, user_id, sensitivity=0, consider_options=False):
 
     # assume the same starting state and available actions for all users
     demo = demos[0]
@@ -379,7 +379,7 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
         # update weights based on correct user action
         future_actions = deepcopy(available_actions)
 
-        if np.mean(score) < 1.0 or step == 0:
+        if np.mean(score) < 1.0:  # or step == 0:
 
             ro = rollout_trajectory(qf, states, transition_function, future_actions, s)
 
@@ -387,21 +387,32 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
             dp = ro.index(take_action)
             # c = dp / (qf[s][predict_action] - qf[s][take_action])
 
-            print("Step:", step, "Score:", np.mean(score), "dp:", dp)
-            if dp > 40:
+            print("Step:", step, "Score:", np.mean(score), "dp:", dp, "dq:", qf[s][predict_action] - qf[s][take_action])
+            if dp > 6:
+
+                # if "part" in pref:
+                #     pref.remove("part")
+                #     features = np.hstack((features, add_features[:, -2:-1]))
+                # elif "space" in pref:
+                #     pref.remove("space")
+                #     features = np.hstack((features, add_features[:, -1:]))
+
                 # if int(user_id) in [7, 9, 14, 15, 17, 19, 20, 21, 23, 24, 25, 27, 29]:
                 # weights = np.append(weights, np.random.sample())
-                features = add_features
                 # _, n_features = np.shape(features)
                 # rewards = features.dot(weights)
                 # qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx)
                 print("Added new feature.")
 
+                _, n_features = np.shape(features)
+                prev_weights = init(n_features)
+            else:
+                prev_weights = deepcopy(weights)
+
             # if c > 5000:
             #     print("More then 5000", step, c, dp)
 
             # infer intended user action
-            prev_weights = deepcopy(weights)
             p, sp = transition_function(states[s], take_action)
             future_actions.remove(take_action)
             ro = rollout_trajectory(qf, states, transition_function, future_actions, states.index(sp))
@@ -439,10 +450,8 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
 
             # max entropy approach
             # print("Re-learning weights ...")
-            _, n_features = np.shape(features)
 
-            init_weights = init(n_features)  # prev_weights
-
+            init_weights = prev_weights  # init(n_features)
             _, new_weights = maxent_irl(task, features, intended_trajectories, optim, init_weights, eps=1e-2)
             print("Updated weights from", weights, "to", new_weights)
             weights = deepcopy(new_weights)

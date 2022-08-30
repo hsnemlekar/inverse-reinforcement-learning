@@ -102,7 +102,7 @@ class AssemblyTask:
         _, n_features = np.shape(self.features)
         # feature_value = [phase * e_p, phase * e_m, c_part, c_tool]
         if n_features > 2:
-            feature_value = [phase * e_p, phase * e_m, (1.0 - phase) * e_p, (1.0 - phase) * e_m, c_part, c_tool,
+            feature_value = [phase * e_p, phase * e_m, (1.0 - phase) * e_p, (1.0 - phase) * e_m, c_tool, c_part,
                              self.features[curr_a][2]]
         else:
             feature_value = [phase * e_p, phase * e_m, (1.0 - phase) * e_p, (1.0 - phase) * e_m, c_tool]
