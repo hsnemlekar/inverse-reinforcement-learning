@@ -303,6 +303,8 @@ def predict_trajectory(qf, states, demos, transition_function, sensitivity=0, co
                 score.append(predict_action == take_action)
         scores.append(np.mean(score))
 
+        print("Predicted", candidates, "for", take_action)
+
         future_actions = deepcopy(available_actions)
         if np.mean(score) < 1.0:
             ro = rollout_trajectory(qf, states, transition_function, future_actions, s)
@@ -320,8 +322,8 @@ def predict_trajectory(qf, states, demos, transition_function, sensitivity=0, co
 
 # ------------------------------------------------- Contribution ---------------------------------------------------- #
 
-def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, weights, features, add_features,
-                              samples, pref, optim, init, user_id, sensitivity=0, consider_options=False):
+def online_predict_trajectory(task, demos, weights, features, add_features, pref, optim, init,
+                              user_id, sensitivity=0, consider_options=False):
 
     # assume the same starting state and available actions for all users
     demo = demos[0]
@@ -333,8 +335,12 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
     rewards = features.dot(weights)
     qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx, delta=1e-3)
 
+    # maintain running avg
+    running_acc = []
+    # p_score, _, _ = predict_trajectory(qf, task.states, demos, task.transition, sensitivity=0.0, consider_options=False)
+    # running_acc.append(np.mean(p_score))
+
     up_weights = []
-    track_dist = []
     scores, predictions, options = [], [], []
     for step, take_action in enumerate(demo):
 
@@ -388,21 +394,18 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
             # c = dp / (qf[s][predict_action] - qf[s][take_action])
 
             print("Step:", step, "Score:", np.mean(score), "dp:", dp, "dq:", qf[s][predict_action] - qf[s][take_action])
-            if dp > 6:
+            if dp > 3:
 
-                # if "part" in pref:
-                #     pref.remove("part")
-                #     features = np.hstack((features, add_features[:, -2:-1]))
-                # elif "space" in pref:
-                #     pref.remove("space")
-                #     features = np.hstack((features, add_features[:, -1:]))
+                if "part" in pref:
+                    pref.remove("part")
+                    features = np.hstack((features, add_features[:, -2:-1]))
+                elif "space" in pref:
+                    pref.remove("space")
+                    features = np.hstack((features, add_features[:, -1:]))
 
-                # if int(user_id) in [7, 9, 14, 15, 17, 19, 20, 21, 23, 24, 25, 27, 29]:
-                # weights = np.append(weights, np.random.sample())
-                # _, n_features = np.shape(features)
-                # rewards = features.dot(weights)
-                # qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx)
-                print("Added new feature.")
+                # if int(user_id) in [15, 17, 20, 21, 25, 27, 29]:
+                #     features = add_features
+                    print("Added new feature.")
 
                 _, n_features = np.shape(features)
                 prev_weights = init(n_features)
@@ -460,8 +463,12 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
             rewards = features.dot(weights)
             qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx,
                                        delta=1e-3)
+
+        #     p_score, _, _ = predict_trajectory(qf, task.states, demos, task.transition, sensitivity=0.0,
+        #                                        consider_options=False)
+        #     running_acc.append(np.mean(p_score))
         # else:
-        #     init_weights = prev_weights
+        #     running_acc.append(np.mean(p_score))
 
         # _, new_weights = maxent_irl(task, features, intended_trajectories, optim, init_weights, eps=1e-2)
         # weights = deepcopy(new_weights)
@@ -474,4 +481,4 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
         s = states.index(sp)
         available_actions.remove(take_action)
 
-    return scores, predictions, options, up_weights, track_dist
+    return scores, predictions, options, up_weights, running_acc

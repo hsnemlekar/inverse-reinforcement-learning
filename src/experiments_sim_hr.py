@@ -48,7 +48,7 @@ run_maxent = True
 run_bayes = False
 run_random_actions = False
 run_random_weights = False
-online_learning = False
+online_learning = True
 
 # algorithm parameters
 map_estimate = True
@@ -59,7 +59,7 @@ test_canonical = False
 test_complex = False
 
 # select samples
-n_train_samples = 1000
+n_train_samples = 1
 n_test_samples = 1
 
 # -------------------------------------------------- Load data ------------------------------------------------------ #
@@ -80,10 +80,11 @@ df = pd.read_csv(demo_path)
 # initialize list of scores
 predict_scores, random1_scores, random2_scores, worst_scores = [], [], [], []
 weights, final_weights = [], []
+predicted_sequences = []
 
 # users to consider for evaluation
 # users = [7, 8, 9, 10, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
-users = [31, 32, 33, 34, 35, 36, 37, 39, 40, 41, 52, 53, 54, 55, 56, 57, 58]
+users = [31, 32, 33, 34, 35, 36, 37, 39, 40, 41, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
 pref = [["part"],
         ["space"],
         ["space"],
@@ -100,10 +101,15 @@ pref = [["part"],
         ["part"],
         ["part", "space"],
         ["part", "space"],
-        []]
+        [],
+        ["space"],
+        ["space", "part"],
+        [],
+        ["space", "part"],
+        ["space", "part"]]
 n_users = len(users)
 
-# iterate over each user
+# iterate over each user+
 for ui, user_id in enumerate(users):
 
     user_id = str(user_id)
@@ -139,7 +145,12 @@ for ui, user_id in enumerate(users):
     _, n_shared_features = np.shape(canonical_features)
 
     # canonical demonstration for training
-    canonical_user_demo = [canonical_demo]
+    if user_id == "29":
+        canonical_user_demo = [[5, 2, 0, 3, 1, 4]]
+    elif user_id == "16":
+        canonical_user_demo = [[5, 2, 0, 1, 4, 3]]
+    else:
+        canonical_user_demo = [canonical_demo]
     canonical_trajectories = get_trajectories(C.states, canonical_user_demo, C.transition)
     print("Canonical demo:", canonical_user_demo)
 
@@ -230,6 +241,7 @@ for ui, user_id in enumerate(users):
     # ---------------------------------------- Training: Learn weights ---------------------------------------------- #
 
     # select initial distribution of weights
+    # init = O.Uniform()
     init = O.Constant(0.5)  # O.Uniform()
 
     # choose our optimization strategy: exponentiated stochastic gradient descent with linear learning-rate decay
@@ -237,9 +249,11 @@ for ui, user_id in enumerate(users):
 
     if run_maxent:
         print("Training using Max-Entropy IRL ...")
-        init_weights = init(n_shared_features)
-        _, canonical_weights = maxent_irl(C, canonical_features, canonical_trajectories, optim, init_weights)
-        print("Weights have been learned for the canonical task! Hopefully.")
+        canonical_weights = []
+        for _ in range(n_train_samples):
+            init_weights = init(n_shared_features)
+            _, canonical_weight = maxent_irl(C, canonical_features, canonical_trajectories, optim, init_weights)
+            canonical_weights.append(canonical_weight)
 
     elif run_bayes:
         print("Training using Bayesian IRL ...")
@@ -312,7 +326,7 @@ for ui, user_id in enumerate(users):
         print("Testing ...")
 
         if map_estimate:
-            transferred_weights = [canonical_weights]
+            transferred_weights = canonical_weights
         elif run_bayes:
             weight_idx = np.random.choice(range(len(weight_samples)), size=n_test_samples, p=posteriors)
             transferred_weights = weight_samples[weight_idx]
@@ -332,20 +346,21 @@ for ui, user_id in enumerate(users):
 
             if online_learning:
                 init = O.Uniform()  # Constant(0.5)
-                p_score, predict_sequence, _, ws, tds = online_predict_trajectory(X, complex_user_demo,
-                                                                                  all_complex_trajectories,
-                                                                                  complex_likelihoods,
-                                                                                  transferred_weight,
-                                                                                  shared_features,
-                                                                                  complex_features,
-                                                                                  [], pref[ui],
-                                                                                  optim, init,
-                                                                                  user_id,
-                                                                                  sensitivity=0.0,
-                                                                                  consider_options=False)
+                for n_sample in range(n_test_samples):
+                    p_score, predict_sequence, _, _, _ = online_predict_trajectory(X, complex_user_demo,
+                                                                                   transferred_weight,
+                                                                                   shared_features,
+                                                                                   complex_features,
+                                                                                   [],
+                                                                                   optim, init,
+                                                                                   user_id,
+                                                                                   sensitivity=0.0,
+                                                                                   consider_options=False)
+                    predict_score.append(p_score)
 
                 # print(ws[-1])
                 # final_weights.append(ws[-1])
+
             else:
 
                 p_score, predict_sequence, _ = predict_trajectory(qf_transfer, X.states,
@@ -353,10 +368,11 @@ for ui, user_id in enumerate(users):
                                                                   X.transition,
                                                                   sensitivity=0.0,
                                                                   consider_options=False)
-            predict_score.append(p_score)
+                predict_score.append(p_score)
 
         predict_score = np.mean(predict_score, axis=0)
         predict_scores.append(predict_score)
+        predicted_sequences.append(predict_sequence)
 
         print("\n")
         print("Complex task:")
@@ -426,15 +442,16 @@ for ui, user_id in enumerate(users):
 
 # -------------------------------------------------- Save results --------------------------------------------------- #
 
-save_path = "results/corl/"
+save_path = "results/hri/"
 
 if run_bayes:
     np.savetxt(save_path + "weights" + str(n_users) + "_norm_feat_bayes.csv", weights)
     np.savetxt(save_path + "predict" + str(n_users) + "_norm_feat_bayes.csv", predict_scores)
 
 if run_maxent:
-    np.savetxt(save_path + "weights" + str(n_users) + "_maxent_uni.csv", weights)
-    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_uni.csv", predict_scores)
+    # np.savetxt(save_path + "weights" + str(n_users) + "_maxent_new_online.csv", weights)
+    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_followup.csv", predict_scores)
+    np.savetxt(save_path + "sequence" + str(n_users) + "_maxent_new_online_followup.csv", predicted_sequences)
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random1_scores)

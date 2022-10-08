@@ -120,16 +120,53 @@ class CanonicalTask(AssemblyTask):
     feature values for each action = [physical_effort, mental_effort, movement]
     """
 
+    # @staticmethod
+    # def transition(s_from, a):
+    #     # preconditions
+    #     if s_from[a] < 1:
+    #         if a in [0, 1, 2]:
+    #             prob = 1.0
+    #         elif a in [3, 4, 5] and s_from[a - 3] == 1:
+    #             prob = 1.0
+    #         else:
+    #             prob = 0.0
+    #     else:
+    #         prob = 0.0
+    #
+    #     # transition to next state
+    #     if prob == 1.0:
+    #         s_to = deepcopy(s_from)
+    #         s_to[a] += 1
+    #         return prob, s_to
+    #     else:
+    #         return prob, None
+    #
+    # @staticmethod
+    # def back_transition(s_to, a):
+    #     # preconditions
+    #     if s_to[a] > 0:
+    #         if a in [0, 1, 2] and s_to[a + 3] < 1:
+    #             p = 1.0
+    #         elif a in [3, 4, 5]:
+    #             p = 1.0
+    #         else:
+    #             p = 0.0
+    #     else:
+    #         p = 0.0
+    #
+    #     # transition to next state
+    #     if p == 1.0:
+    #         s_from = deepcopy(s_to)
+    #         s_from[a] -= 1
+    #         return p, s_from
+    #     else:
+    #         return p, None
+
     @staticmethod
     def transition(s_from, a):
         # preconditions
         if s_from[a] < 1:
-            if a in [0, 1, 2]:
-                prob = 1.0
-            elif a in [3, 4, 5] and s_from[a - 3] == 1:
-                prob = 1.0
-            else:
-                prob = 0.0
+            prob = 1.0
         else:
             prob = 0.0
 
@@ -145,12 +182,7 @@ class CanonicalTask(AssemblyTask):
     def back_transition(s_to, a):
         # preconditions
         if s_to[a] > 0:
-            if a in [0, 1, 2] and s_to[a + 3] < 1:
-                p = 1.0
-            elif a in [3, 4, 5]:
-                p = 1.0
-            else:
-                p = 0.0
+            p = 1.0
         else:
             p = 0.0
 
@@ -220,13 +252,19 @@ class LongTask(AssemblyTask):
     """
     Actions:
 
+
     """
 
     @staticmethod
     def transition(s_from, a):
         # preconditions
         if s_from[a] < 1:
-            prob = 1.0
+            if a in [0, 1, 2, 3, 4, 5, 6]:
+                prob = 1.0
+            elif a in [7, 8, 9, 10, 11, 12, 13] and s_from[a - 7] == 1:
+                prob = 1.0
+            else:
+                prob = 0.0
         else:
             prob = 0.0
 
@@ -242,7 +280,12 @@ class LongTask(AssemblyTask):
     def back_transition(s_to, a):
         # preconditions
         if s_to[a] > 0:
-            p = 1.0
+            if a in [0, 1, 2, 3, 4, 5, 6] and s_to[a + 7] < 1:
+                p = 1.0
+            elif a in [7, 8, 9, 10, 11, 12, 13]:
+                p = 1.0
+            else:
+                p = 0.0
         else:
             p = 0.0
 
@@ -253,3 +296,35 @@ class LongTask(AssemblyTask):
             return p, s_from
         else:
             return p, None
+
+    # @staticmethod
+    # def transition(s_from, a):
+    #     # preconditions
+    #     if s_from[a] < 1:
+    #         prob = 1.0
+    #     else:
+    #         prob = 0.0
+    #
+    #     # transition to next state
+    #     if prob == 1.0:
+    #         s_to = deepcopy(s_from)
+    #         s_to[a] += 1
+    #         return prob, s_to
+    #     else:
+    #         return prob, None
+    #
+    # @staticmethod
+    # def back_transition(s_to, a):
+    #     # preconditions
+    #     if s_to[a] > 0:
+    #         p = 1.0
+    #     else:
+    #         p = 0.0
+    #
+    #     # transition to next state
+    #     if p == 1.0:
+    #         s_from = deepcopy(s_to)
+    #         s_from[a] -= 1
+    #         return p, s_from
+    #     else:
+    #         return p, None

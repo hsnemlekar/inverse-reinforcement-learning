@@ -59,6 +59,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\demo_hr.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\experiments.py">
           <value>
             <Attribute>
