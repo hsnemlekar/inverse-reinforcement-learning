@@ -388,21 +388,24 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
             # c = dp / (qf[s][predict_action] - qf[s][take_action])
 
             print("Step:", step, "Score:", np.mean(score), "dp:", dp, "dq:", qf[s][predict_action] - qf[s][take_action])
-            if dp > 6:
+            if dp > 3:
 
-                # if "part" in pref:
-                #     pref.remove("part")
-                #     features = np.hstack((features, add_features[:, -2:-1]))
-                # elif "space" in pref:
-                #     pref.remove("space")
-                #     features = np.hstack((features, add_features[:, -1:]))
+                if "part" in pref:
+                    pref.remove("part")
+                    features = np.hstack((features, add_features[:, -2:-1]))
+                    print("Added new feature.")
+                elif "space" in pref:
+                    pref.remove("space")
+                    features = np.hstack((features, add_features[:, -1:]))
+                    print("Added new feature.")
 
                 # if int(user_id) in [7, 9, 14, 15, 17, 19, 20, 21, 23, 24, 25, 27, 29]:
                 # weights = np.append(weights, np.random.sample())
                 # _, n_features = np.shape(features)
                 # rewards = features.dot(weights)
                 # qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx)
-                print("Added new feature.")
+
+                # features = add_features
 
                 _, n_features = np.shape(features)
                 prev_weights = init(n_features)

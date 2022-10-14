@@ -48,8 +48,6 @@ long_features = [[0.056, 0.861, 0.218],
                  [0.106, 0.095, 0.641],
                  [0.962, 0.528, 0.618]]
 
-_, n_features = np.shape(complex_features)
-
 adverse_features = [[0.950, 0.033, 0.180, 0.777],
                     [0.044, 0.367, 0.900, 0.152],
                     [0.544, 0.700, 0.380, 0.652],
@@ -87,8 +85,10 @@ run_bayes = False
 run_random_actions = False
 run_random_weights = True
 online_learning = True
+add_feature = True
 
 # algorithm parameters
+missing_feature = 0
 noisy_users = False
 map_estimate = True
 custom_prob = False
@@ -99,26 +99,31 @@ test_complex = False
 
 # select samples
 if online_learning:
-    n_train_samples = 15
+    n_train_samples = 25
 else:
-    n_train_samples = 30
-n_test_samples = 2
+    n_train_samples = 50
+n_test_samples = 30
 
 # select initial distribution of weights
 if exists("data/user_demos/weight_samples.csv"):
     weight_samples = np.loadtxt("data/user_demos/weight_samples.csv")
 else:
-    weight_samples = np.random.uniform(0., 1., (n_train_samples, n_features))
+    weight_samples = np.random.uniform(0., 1., (n_train_samples, 3))
     d = 1.  # np.sum(u, axis=1)  # np.sum(u ** 2, axis=1) ** 0.5
     weight_samples = weight_samples / d
 
 # -------------------------------------------------- Load data ------------------------------------------------------ #
 
 # paths
-canonical_path = "data/user_demos/canonical_demos.csv"
-if noisy_users:
+if add_feature:
+    canonical_path = "data/user_demos/canonical_shared_demos" + str(missing_feature) + ".csv"
+    complex_path = "data/user_demos/complex_shared_demos" + str(missing_feature) + ".csv"
+    # complex_path = "data/user_demos/complex_demos.csv"
+elif noisy_users:
+    canonical_path = "data/user_demos/canonical_demos.csv"
     complex_path = "data/user_demos/noisy_demos1.csv"
 else:
+    canonical_path = "data/user_demos/canonical_demos.csv"
     complex_path = "data/user_demos/complex_demos.csv"
 
 # user demonstrations
@@ -138,7 +143,8 @@ canonical_actions = list(range(len(canonical_features)))
 complex_actions = list(range(len(complex_features)))
 
 # initialize canonical task
-C = CanonicalTask(canonical_features)
+reduced_features = np.delete(canonical_features, missing_feature, axis=1)
+C = CanonicalTask(reduced_features)
 C.set_end_state(canonical_actions)
 C.enumerate_states()
 C.set_terminal_idx()
@@ -158,7 +164,8 @@ else:
     all_canonical_trajectories = []
 
 # initialize an actual task with shared features
-X = ComplexTask(complex_features)
+reduced_features = np.delete(complex_features, missing_feature, axis=1)
+X = ComplexTask(reduced_features)
 X.set_end_state(complex_actions)
 X.enumerate_states()
 X.set_terminal_idx()
@@ -167,15 +174,17 @@ X.set_terminal_idx()
 shared_features = np.array([X.get_features(state) for state in X.states])
 shared_features /= np.linalg.norm(shared_features, axis=0)
 
+_, n_features = np.shape(shared_features)
+
 # initialize an actual task with the full set of features
-X_add = ComplexTask(adverse_features)
+X_add = ComplexTask(complex_features)
 X_add.set_end_state(complex_actions)
 X_add.enumerate_states()
 X_add.set_terminal_idx()
 
 # compute feature values for each state in actual task with all features
-complex_features_add = np.array([X_add.get_features(state) for state in X_add.states])
-complex_features_add /= np.linalg.norm(complex_features_add, axis=0)
+complex_features = np.array([X_add.get_features(state) for state in X_add.states])
+complex_features /= np.linalg.norm(complex_features, axis=0)
 
 if run_bayes:
     if exists("data/user_demos/complex_trajectories.csv"):
@@ -333,7 +342,7 @@ for ui in range(len(canonical_demos)):
                                                                                    complex_likelihoods,
                                                                                    transferred_weight,
                                                                                    shared_features,
-                                                                                   complex_features_add,
+                                                                                   complex_features,
                                                                                    [], [],
                                                                                    optim, init,
                                                                                    ui,
@@ -396,7 +405,7 @@ for ui in range(len(canonical_demos)):
                                                                                    complex_likelihoods,
                                                                                    random_weight,
                                                                                    shared_features,
-                                                                                   complex_features_add,
+                                                                                   complex_features,
                                                                                    [], [],
                                                                                    optim, init_prior,
                                                                                    ui,
@@ -425,12 +434,12 @@ if run_bayes:
 
 if run_maxent:
     # np.savetxt(save_path + "weights" + str(n_users) + "_maxent_uni.csv", weights)
-    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online.csv", predict_scores)
+    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_add0_all0.csv", predict_scores)
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random_scores)
 
 if run_random_weights:
-    np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online.csv", random_scores)
+    np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online_add1.csv", random_scores)
 
 print("Done.")
