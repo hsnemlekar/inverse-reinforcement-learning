@@ -8,10 +8,10 @@ import pingouin as pg
 from import_qualtrics import get_qualtrics_survey
 
 # ---------------------------------------------------- Result ------------------------------------------------------- #
-sim = False
+sim = True
 print_subjective = False
 plot_subjective = False
-plot_time = True
+plot_time = False
 
 # plotting style
 sns.set(style="darkgrid", context="talk")
@@ -267,8 +267,8 @@ if plot_bar:
         plt.legend(fontsize=18, ncol=3, loc=9)
         # plt.gcf().subplots_adjust(bottom=0.175)
         plt.gcf().subplots_adjust(left=0.15)
-        plt.savefig("figures/corl/sim_nop.png", bbox_inches='tight')
-        # plt.show()
+        # plt.savefig("figures/corl/sim_nop.png", bbox_inches='tight')
+        plt.show()
     else:
         plt.figure(figsize=(6, 5))
         # X = ["prior"] * n_users + ["online"] * n_users + ["rand-add"] * n_users + ["online-add"] * n_users
