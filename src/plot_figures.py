@@ -110,13 +110,22 @@ for i, q_idx in enumerate(plot_q):
 dir_path = os.path.dirname(__file__)
 if sim:
     file_path = dir_path + "/results/corl_sim/"
-    prior1_scores = np.loadtxt(file_path + "predict20_maxent_new_online_add0_all3.csv")
-    predict1_scores = np.loadtxt(file_path + "predict20_maxent_new_online_add0_all0.csv")
-    random1_scores = np.loadtxt(file_path + "random20_weights_new_online_add.csv")
 
-    prior2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_add1_all3.csv")
-    predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_add1_all0.csv")
+    prior1_scores = np.loadtxt(file_path + "predict20_maxent_uni.csv")
+    predict1_scores = np.loadtxt(file_path + "predict20_maxent_new_online.csv")
+    random1_scores = np.loadtxt(file_path + "random20_weights_new_online.csv")
+
+    prior2_scores = np.loadtxt(file_path + "predict20_maxent_uni.csv")
+    predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy1.csv")
     random2_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy1.csv")
+
+    # prior1_scores = np.loadtxt(file_path + "predict20_maxent_new_online_add0_all3.csv")
+    # predict1_scores = np.loadtxt(file_path + "predict20_maxent_new_online_add0_all0.csv")
+    # random1_scores = np.loadtxt(file_path + "random20_weights_new_online_add.csv")
+    #
+    # prior2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_add1_all3.csv")
+    # predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_add1_all0.csv")
+    # random2_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy1.csv")
 
     prior3_scores = np.loadtxt(file_path + "predict20_maxent_new_online_add2_all3.csv")
     predict3_scores = np.loadtxt(file_path + "predict20_maxent_new_online_add2_all0.csv")
@@ -167,7 +176,7 @@ if plot_time:
     # plt.savefig("figures/corl/idle_time.png", bbox_inches='tight')
 
 # --------------------------------------------- Action anticipation ------------------------------------------------- #
-add = True
+add = False
 if not sim:
     if not add:
         # Split for adding feature
@@ -254,27 +263,21 @@ cp = sns.color_palette()
 if plot_bar:
     if sim:
         plt.figure(figsize=(8, 5))
-        X = ["add-phi1"] * 2 * n_users + \
-            ["add-phi2"] * 2 * n_users + \
-            ["add-phi3"] * 2 * n_users
-        # + \
-        # ["0.2"]*3*n_users + \
-        # ["0.3"]*3*n_users + \
-        # ["0.4"]*3*n_users
-        Y = list(prior1_users) + list(predict1_users) + \
-            list(prior2_users) + list(predict2_users) + \
-            list(prior3_users) + list(predict3_users)
-        # + \
-        # list(prior3_users) + list(random3_users) + list(predict3_users) + \
-        # list(prior4_users) + list(random4_users) + list(predict4_users) + \
-        # list(prior5_users) + list(random5_users) + list(predict5_users)
-        Z = ["online"] * n_users + ["online_add"] * n_users + \
-            ["online"] * n_users + ["online_add"] * n_users + \
-            ["online"] * n_users + ["online_add"] * n_users
-        # ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users + \
-        # ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users
-        sns.barplot(x=X, y=Y, hue=Z, ci=68, errwidth=2, capsize=.1, palette=["g", "r"])  # tan
-        plt.ylim(0.4, 0.875)
+        X = ["add-phi1"] * 3 * n_users + \
+            ["add-phi2"] * 3 * n_users
+            # + \
+            # ["add-phi3"] * 2 * n_users
+        Y = list(prior1_users) + list(random1_users) + list(predict1_users) + \
+            list(prior2_users) + list(random2_users) + list(predict2_users) \
+            # + \
+            # list(prior3_users) + list(predict3_users)
+        # Z = ["online"] * n_users + ["online_add"] * n_users + \
+        #     ["online"] * n_users + ["online_add"] * n_users + \
+        #     ["online"] * n_users + ["online_add"] * n_users
+        Z = ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users + \
+            ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users
+        sns.barplot(x=X, y=Y, hue=Z, ci=68, errwidth=2, capsize=.1, palette=["b", cp[1], "g"])  # tan
+        plt.ylim(0.5, 0.9)
         plt.xticks(fontsize=18)
         plt.yticks(fontsize=16)
         plt.ylabel("Accuracy", fontsize=18)
