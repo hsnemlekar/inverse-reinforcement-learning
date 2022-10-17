@@ -54,27 +54,6 @@ long_features = [[0.770, 0.723, 0.573],
                  # [0.614, 0.513, 0.661],
                  # [0.364, 0.180, 0.381]]
 
-# weights = [[0.60, 0.20, 0.20],
-#            [0.20, 0.60, 0.20],
-#            [0.20, 0.20, 0.60],
-#            [0.80, 0.10, 0.10],
-#            [0.10, 0.80, 0.10],
-#            [0.10, 0.10, 0.80],
-#            [0.40, 0.40, 0.20],
-#            [0.40, 0.20, 0.40],
-#            [0.20, 0.40, 0.40],
-#            [0.40, 0.30, 0.30],
-#            [0.30, 0.40, 0.30],
-#            [0.30, 0.30, 0.40],
-#            [0.60, 0.30, 0.10],
-#            [0.60, 0.10, 0.30],
-#            [0.30, 0.60, 0.10],
-#            [0.10, 0.60, 0.30],
-#            [0.30, 0.10, 0.60],
-#            [0.10, 0.30, 0.60],
-#            [1.00, 0.00, 0.00],
-#            [0.00, 0.00, 1.00]]
-
 weights = [[0.80, 0.10, 0.10],
            [0.10, 0.80,	0.10],
            [0.10, 0.10, 0.80],
@@ -99,7 +78,7 @@ weights = [[0.80, 0.10, 0.10],
 # ---------------------------------------------------- MAIN --------------------------------------------------------- #
 
 # experiment choice
-anti_users = True
+anti_users = False
 noisy_users = False
 long_task = False
 
@@ -125,7 +104,7 @@ elif anti_users:
 # noisy_weights4 += np.random.normal(0, 0.4, noisy_weights4.shape)
 
 # excluded weight
-w_red = 2
+w_red = []
 reduced_weights = np.delete(weights, w_red, axis=1)
 
 # initialize canonical task
@@ -220,6 +199,8 @@ for i in range(len(weights)):
 
 save_path = "data/user_demos/"
 np.savetxt(save_path + "weights.csv", weights)
+np.savetxt(save_path + "canonical_features.csv", canonical_features)
+np.savetxt(save_path + "complex_features.csv", complex_features)
 np.savetxt(save_path + "canonical_demos.csv", canonical_demos)
 np.savetxt(save_path + "complex_demos.csv", complex_demos)
 # np.savetxt("data/user_demos/canonical_shared_demos" + str(w_red) + ".csv", canonical_shared_demos)
@@ -227,10 +208,10 @@ np.savetxt(save_path + "complex_demos.csv", complex_demos)
 # pickle.dump(all_canonical_trajectories, open("data/user_demos/canonical_trajectories.csv", "wb"))
 # pickle.dump(all_complex_trajectories, open("data/user_demos/complex_trajectories.csv", "wb"))
 
-n_users, n_cases, n_actions = np.shape(new_demos)
-new_demos = list(np.reshape(new_demos, (n_cases, n_users, n_actions)))
-for j, case_demos in enumerate(new_demos):
-    np.savetxt(save_path + "new_weights" + str(j+1) + ".csv", new_weights[j])
-    np.savetxt(save_path + "new_demos" + str(j+1) + ".csv", case_demos)
+# n_users, n_cases, n_actions = np.shape(new_demos)
+# new_demos = list(np.reshape(new_demos, (n_cases, n_users, n_actions)))
+# for j, case_demos in enumerate(new_demos):
+#     np.savetxt(save_path + "new_weights" + str(j+1) + ".csv", new_weights[j])
+#     np.savetxt(save_path + "new_demos" + str(j+1) + ".csv", case_demos)
 
 print("Done.")

@@ -9,96 +9,22 @@ import pickle
 import numpy as np
 import pandas as pd
 from os.path import exists
+from copy import deepcopy
 
-
-# ------------------------------------------------ Feature values --------------------------------------------------- #
-
-canonical_features = [[0.837, 0.244, 0.282],
-                      [0.212, 0.578, 0.018],
-                      [0.712, 0.911, 0.418],
-                      [0.462, 0.195, 0.882],
-                      [0.962, 0.528, 0.618],
-                      [0.056, 0.861, 0.218]]
-
-complex_features = [[0.950, 0.033, 0.180],
-                    [0.044, 0.367, 0.900],
-                    [0.544, 0.700, 0.380],
-                    [0.294, 0.145, 0.580],
-                    [0.794, 0.478, 0.780],
-                    [0.169, 0.811, 0.041],
-                    [0.669, 0.256, 0.980],
-                    [0.419, 0.589, 0.241],
-                    [0.919, 0.922, 0.441],
-                    [0.106, 0.095, 0.641]]
-
-long_features = [[0.770, 0.723, 0.573],
-                 [0.145, 0.612, 0.973],
-                 [0.645, 0.279, 0.773],
-                 [0.395, 0.945, 0.293],
-                 [0.895, 0.476, 0.093],
-                 [0.083, 0.143, 0.493],
-                 [0.583, 0.810, 0.893],
-                 [0.333, 0.365, 0.693],
-                 [0.833, 0.032, 0.333],
-                 [0.208, 0.698, 0.133],
-                 [0.708, 0.587, 0.533],
-                 [0.458, 0.254, 0.933],
-                 [0.958, 0.921, 0.733],
-                 [0.051, 0.538, 0.221]]
-                 # [0.551, 0.205, 0.021],
-                 # [0.301, 0.871, 0.421],
-                 # [0.801, 0.427, 0.821],
-                 # [0.176, 0.094, 0.621],
-                 # [0.676, 0.760, 0.261],
-                 # [0.426, 0.649, 0.061],
-                 # [0.926, 0.316, 0.461],
-                 # [0.114, 0.982, 0.861],
-                 # [0.614, 0.513, 0.661],
-                 # [0.364, 0.180, 0.381]]
-
-adverse_features = [[0.950, 0.033, 0.180, 0.777],
-                    [0.044, 0.367, 0.900, 0.152],
-                    [0.544, 0.700, 0.380, 0.652],
-                    [0.294, 0.145, 0.580, 0.402],
-                    [0.794, 0.478, 0.780, 0.902],
-                    [0.169, 0.811, 0.041, 0.090],
-                    [0.669, 0.256, 0.980, 0.590],
-                    [0.669, 0.256, 0.980, 0.590],
-                    [0.419, 0.589, 0.241, 0.340],
-                    [0.919, 0.922, 0.441, 0.840],
-                    [0.106, 0.095, 0.641, 0.215]]
-
-weights_adverse = [[0.60, 0.20, 0.20, 0.60],
-                   [0.80, 0.10, 0.10, 0.01],
-                   [0.20, 0.60, 0.20, 0.60],
-                   [0.10, 0.80, 0.10, 0.01],
-                   [0.20, 0.20, 0.60, 0.60],
-                   [0.10, 0.10, 0.80, 0.01],
-                   [0.40, 0.40, 0.20, 0.20],
-                   [0.40, 0.20, 0.40, 0.20],
-                   [0.20, 0.40, 0.40, 0.20],
-                   [0.40, 0.30, 0.30, 0.40],
-                   [0.30, 0.40, 0.30, 0.40],
-                   [0.50, 0.30, 0.20, 0.00],
-                   [0.50, 0.20, 0.30, 0.00],
-                   [0.30, 0.50, 0.20, 0.80],
-                   [0.20, 0.50, 0.30, 0.80],
-                   [0.30, 0.20, 0.50, 0.15],
-                   [0.20, 0.30, 0.50, 0.80]]
 
 # -------------------------------------------------- Experiment ----------------------------------------------------- #
 
 # select algorithm
-run_maxent = True
+run_maxent = False
 run_bayes = False
 run_random_actions = False
-run_random_weights = False
+run_random_weights = True
 online_learning = True
-add_feature = True
+add_feature = False
 
-# algorithm parameters
-missing_feature = 0
-long_task = True
+# experiment parameters
+missing_feature = []
+long_task = False
 noisy_users = False
 map_estimate = True
 custom_prob = False
@@ -107,51 +33,55 @@ custom_prob = False
 test_canonical = False
 test_complex = False
 
-# select samples
+# select iterations
 if online_learning:
-    n_train_samples = 25
+    n_train_samples = 3
 else:
-    n_train_samples = 50
-n_test_samples = 30
-
-if long_task:
-    complex_features = long_features
-
-# select initial distribution of weights
-_, n_features = np.shape(complex_features)
-if exists("data/user_demos/weight_samples.csv"):
-    weight_samples = np.loadtxt("data/user_demos/weight_samples.csv")
-else:
-    weight_samples = np.random.uniform(0., 1., (n_train_samples, 3))
-    d = 1.  # np.sum(u, axis=1)  # np.sum(u ** 2, axis=1) ** 0.5
-    weight_samples = weight_samples / d
+    n_train_samples = 3
+n_test_samples = 2
 
 # -------------------------------------------------- Load data ------------------------------------------------------ #
 
 # paths
+data_path = "data/user_demos/"
+weights_path = data_path + "weights.csv"
+canonical_features_path = data_path + "canonical_features.csv"
+complex_features_path = data_path + "complex_features.csv"
 if add_feature:
-    canonical_path = "data/user_demos/canonical_shared_demos" + str(missing_feature) + ".csv"
-    complex_path = "data/user_demos/complex_shared_demos" + str(missing_feature) + ".csv"
-    # complex_path = "data/user_demos/complex_demos.csv"
+    canonical_demo_path = data_path + "canonical_shared_demos" + str(missing_feature) + ".csv"
+    # complex_demo_path = data_path + "complex_shared_demos" + str(missing_feature) + ".csv"
+    complex_demo_path = data_path + "complex_demos.csv"
 elif noisy_users:
-    canonical_path = "data/user_demos/canonical_demos.csv"
-    complex_path = "data/user_demos/noisy_demos1.csv"
-    # complex_path = "data/user_demos/new_demos1.csv"
+    canonical_demo_path = data_path + "canonical_demos.csv"
+    complex_demo_path = data_path + "noisy_demos1.csv"
+    # complex_demo_path = data_path + "new_demos1.csv"
 else:
-    canonical_path = "data/user_demos/canonical_demos.csv"
-    complex_path = "data/user_demos/complex_demos.csv"
+    canonical_demo_path = data_path + "canonical_demos.csv"
+    complex_demo_path = data_path + "complex_demos.csv"
 
-# user demonstrations
-canonical_demos = np.loadtxt(canonical_path).astype(int)
-complex_demos = np.loadtxt(complex_path).astype(int)
+# load feature values and user demonstrations
+true_weights = np.loadtxt(weights_path).astype(float)
+canonical_features = np.loadtxt(canonical_features_path).astype(float).tolist()
+complex_features = np.loadtxt(complex_features_path).astype(float).tolist()
+canonical_demos = np.loadtxt(canonical_demo_path).astype(int)
+complex_demos = np.loadtxt(complex_demo_path).astype(int)
 
-n_users, _ = np.shape(canonical_demos)
+# select initial distribution of weights (for bayesian learning)
+if exists("data/user_demos/weight_samples.csv"):
+    weight_samples = np.loadtxt("data/user_demos/weight_samples.csv")
+else:
+    n_samples = 100
+    _, n_features = np.shape(complex_features)
+    weight_samples = np.random.uniform(0., 1., (n_samples, n_features))
+    d = np.sum(weight_samples, axis=1)  # np.sum(weight_samples ** 2, axis=1) ** 0.5
+    weight_samples = weight_samples / d
+    np.savetxt("data/user_demos/weight_samples.csv", weight_samples)
 
 # ------------------------------------------------------------------------------------------------------------------- #
 
 # initialize list of scores
 predict_scores, random_scores = [], []
-weights, updated_weights, running_accs = [], [], []
+learned_weights, updated_weights, updated_rand_weights, running_accs = {}, {}, {}, []
 
 # assembly task actions
 canonical_actions = list(range(len(canonical_features)))
@@ -188,8 +118,6 @@ X.set_terminal_idx()
 # compute feature values for each state in actual task with shared features
 shared_features = np.array([X.get_features(state) for state in X.states])
 shared_features /= np.linalg.norm(shared_features, axis=0)
-
-_, n_features = np.shape(shared_features)
 
 # initialize an actual task with the full set of features
 X_add = ComplexTask(complex_features)
@@ -257,17 +185,26 @@ for ui in range(len(canonical_demos)):
 
     # ---------------------------------------- Training: Learn weights ---------------------------------------------- #
 
+    _, n_features = np.shape(canonical_features)
+
     # choose our optimization strategy: exponentiated stochastic gradient descent with linear learning-rate decay
-    optim = O.ExpSga(lr=O.linear_decay(lr0=0.6))
+    optim = O.ExpSga(lr=O.linear_decay(lr0=1.2))
     init = O.Uniform()
+
+    transferred_weights, weights_train_update = [], []
 
     if run_maxent:
         print("Training using Max-Entropy IRL ...")
-        canonical_weights = []
         for _ in range(n_train_samples):
+            canonical_update = []
             init_weights = init(n_features)
+            canonical_update.append(deepcopy(init_weights))
             _, canonical_weight = maxent_irl(C, canonical_features, canonical_trajectories, optim, init_weights)
-            canonical_weights.append(canonical_weight)
+            transferred_weights.append(canonical_weight)
+            canonical_update.append(canonical_weight)
+            weights_train_update.append(canonical_update)
+
+        learned_weights[ui] = weights_train_update
 
     elif run_bayes:
         print("Training using Bayesian IRL ...")
@@ -297,25 +234,25 @@ for ui in range(len(canonical_demos)):
 
         # select the MAP (maximum a posteriori) weight estimate
         max_posterior = max(posteriors)
-        canonical_weights = weight_samples[posteriors.index(max_posterior)]
+        transferred_weights = weight_samples[posteriors.index(max_posterior)]
         # max_entropy = max(entropies)
-        # canonical_weights = weight_samples[entropies.index(max_entropy)]
+        # transferred_weights = weight_samples[entropies.index(max_entropy)]
         # all_max_posteriors = [idx for idx, p in enumerate(posteriors) if p == max_posterior]
         # all_max_entropies = [e for idx, e in enumerate(entropies) if idx in all_max_posteriors]
         # max_entropy = max(all_max_entropies)
-        # canonical_weights = weight_samples[all_max_posteriors[all_max_entropies.index(max_entropy)]]
+        # transferred_weights = weight_samples[all_max_posteriors[all_max_entropies.index(max_entropy)]]
 
     else:
         print("Did not learn any weights :(")
-        canonical_weights = None
+        transferred_weights = None
 
-    print("Weights -", canonical_weights)
-    weights.append(canonical_weights)
+    print("Weights -", transferred_weights)
 
     # --------------------------------------- Verifying: Reproduce demo --------------------------------------------- #
 
     if test_canonical:
-        canonical_rewards = canonical_features.dot(canonical_weights)
+        weights_idx = np.random.choice(range(len(transferred_weights)))
+        canonical_rewards = canonical_features.dot(transferred_weights[weights_idx])
         qf_abstract, _, _ = value_iteration(C.states, C.actions, C.transition, canonical_rewards, C.terminal_idx)
         predict_sequence_canonical, _ = predict_trajectory(qf_abstract, C.states, canonical_user_demo, C.transition)
 
@@ -329,16 +266,12 @@ for ui in range(len(canonical_demos)):
     if run_bayes or run_maxent:
         print("Testing ...")
 
-        if map_estimate:
-            transferred_weights = canonical_weights
-        elif run_bayes:
+        if run_bayes:
             weight_idx = np.random.choice(range(len(weight_samples)), size=n_test_samples, p=posteriors)
             transferred_weights = weight_samples[weight_idx]
-        else:
-            transferred_weights = []
 
         # score for predicting user action at each time step
-        predict_score, running_acc = [], []
+        predict_score, weights_test_update, running_acc = [], [], []
         for transferred_weight in transferred_weights:
 
             # transfer rewards to complex task
@@ -353,18 +286,21 @@ for ui in range(len(canonical_demos)):
                 for n_sample in range(n_test_samples):
                     init = O.Uniform()  # O.Constant(0.5)
                     p_score, _, _, up_weights, run_acc = online_predict_trajectory(X, complex_user_demo,
-                                                                                   all_complex_trajectories,
-                                                                                   complex_likelihoods,
                                                                                    transferred_weight,
                                                                                    shared_features,
                                                                                    complex_features,
-                                                                                   [], [],
+                                                                                   [],
                                                                                    optim, init,
                                                                                    ui,
                                                                                    sensitivity=0.0,
                                                                                    consider_options=False)
                     predict_score.append(p_score)
                     running_acc.append(run_acc)
+
+                    test_update = [transferred_weight]
+                    test_update += up_weights
+                    weights_test_update.append(test_update)
+
             else:
                 p_score, predict_sequence, _ = predict_trajectory(qf_transfer, X.states,
                                                                   complex_user_demo,
@@ -373,11 +309,11 @@ for ui in range(len(canonical_demos)):
                                                                   consider_options=False)
                 predict_score.append(p_score)
 
+        # accumulate results
         predict_score = np.mean(predict_score, axis=0)
         predict_scores.append(predict_score)
-
         if online_learning:
-            updated_weights.append(up_weights)
+            updated_weights[ui] = weights_test_update
             running_acc = np.mean(running_acc, axis=0)
             running_accs.append(running_acc)
 
@@ -412,7 +348,7 @@ for ui in range(len(canonical_demos)):
 
         init_prior = O.Uniform()
 
-        random_score, running_acc = [], []
+        random_score, weights_rand_update, running_acc = [], [], []
         max_likelihood = - np.inf
         for n_sample in range(n_train_samples):
             random_weight = init_prior(n_features)  # random_weights[n_sample]
@@ -421,19 +357,22 @@ for ui in range(len(canonical_demos)):
             if online_learning:
                 # init = O.Constant(0.5)
                 for _ in range(n_test_samples):
-                    r_score, _, _, up_weights, running_acc = online_predict_trajectory(X, complex_user_demo,
-                                                                                   all_complex_trajectories,
-                                                                                   complex_likelihoods,
+                    r_score, _, _, up_weights, run_acc = online_predict_trajectory(X, complex_user_demo,
                                                                                    random_weight,
                                                                                    shared_features,
                                                                                    complex_features,
-                                                                                   [], [],
+                                                                                   [],
                                                                                    optim, init_prior,
                                                                                    ui,
                                                                                    sensitivity=0.0,
                                                                                    consider_options=False)
                     random_score.append(r_score)
                     running_acc.append(run_acc)
+
+                    rand_update = [random_weight]
+                    rand_update += up_weights
+                    weights_rand_update.append(rand_update)
+
             else:
                 qf_random, _, _ = value_iteration(X.states, X.actions, X.transition, random_rewards, X.terminal_idx)
                 r_score, predict_sequence, _ = predict_trajectory(qf_random, X.states,
@@ -445,28 +384,30 @@ for ui in range(len(canonical_demos)):
 
         random_score = np.mean(random_score, axis=0)
         random_scores.append(random_score)
-
         if online_learning:
-            updated_weights.append(up_weights)
+            updated_rand_weights[ui] = weights_rand_update
             running_acc = np.mean(running_acc, axis=0)
             running_accs.append(running_acc)
 
 # -------------------------------------------------- Save results --------------------------------------------------- #
 
 save_path = "results/corl_sim/"
+n_users, _ = np.shape(canonical_demos)
 
 if run_bayes:
     # np.savetxt(save_path + "weights" + str(n_users) + "_norm_feat_bayes_ent.csv", weights)
     np.savetxt(save_path + "predict" + str(n_users) + "_norm_feat_bayes_ent.csv", predict_scores)
 
 if run_maxent:
-    # np.savetxt(save_path + "weights" + str(n_users) + "_maxent_uni.csv", weights)
-    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_add0_all0.csv", predict_scores)
+    pickle.dump(learned_weights, open(save_path + "learned_weights.csv", "wb"))
+    pickle.dump(updated_weights, open(save_path + "updated_weights.csv", "wb"))
+    # np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_add0_all0.csv", predict_scores)
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random_scores)
 
 if run_random_weights:
-    np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online_add1.csv", random_scores)
+    pickle.dump(updated_rand_weights, open(save_path + "updated_rand_weights.csv", "wb"))
+    # np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online_add1.csv", random_scores)
 
 print("Done.")

@@ -1,4 +1,5 @@
 import os
+import pickle
 import numpy as np
 from scipy import stats
 import pandas as pd
@@ -12,6 +13,7 @@ sim = True
 print_subjective = False
 plot_subjective = False
 plot_time = False
+plot_weights = True
 
 # plotting style
 sns.set(style="darkgrid", context="talk")
@@ -178,6 +180,49 @@ if plot_time:
     plt.gcf().subplots_adjust(left=0.225)
     plt.show()
     # plt.savefig("figures/corl/task_time.png", bbox_inches='tight')
+
+
+# ----------------------------------------------- Weights update ---------------------------------------------------- #
+
+if plot_weights:
+    true_weights = np.loadtxt(data_path + "user_demos/weights.csv").astype(float)
+    learned_weights = pickle.load(open("results/corl_sim/learned_weights.csv", "rb"))
+    updated_weights = pickle.load(open("results/corl_sim/updated_weights.csv", "rb"))
+    updated_rand_weights = pickle.load(open("results/corl_sim/updated_rand_weights.csv", "rb"))
+
+    # plot weights for given user
+    ui = 1  # user id
+    canonical_init = np.array(learned_weights[ui])[:, 0]
+    canonical_learned = np.array(learned_weights[ui])[:, 1]
+    complex_learned = np.array(updated_weights[ui])[:, -1]
+    random_learned = np.array(updated_rand_weights[ui])[:, -1]
+    fig = plt.figure()
+    ax = plt.axes(projection="3d")
+    ax.scatter3D(true_weights[ui][0], true_weights[ui][1], true_weights[ui][2], color="black", marker="*")
+    ax.scatter3D(canonical_init[:, 0], canonical_init[:, 1], canonical_init[:, 2], color="red")
+    ax.scatter3D(canonical_learned[:, 0], canonical_learned[:, 1], canonical_learned[:, 2], color="blue", marker="h")
+    ax.scatter3D(complex_learned[:, 0], complex_learned[:, 1], complex_learned[:, 2], color="green", marker="^")
+    ax.scatter3D(random_learned[:, 0], random_learned[:, 1], random_learned[:, 2], color="orange", marker="^")
+    plt.show()
+
+    # plot difference to weights
+    transfer_weights_diff, random_weights_diff = [], []
+    for ui, tw in enumerate(true_weights):
+        transfer_diff = updated_weights[ui] - tw
+        transfer_dist = np.linalg.norm(transfer_diff, axis=2)
+        transfer_weights_diff.append(np.mean(transfer_dist, axis=0))
+
+        random_diff = updated_rand_weights[ui] - tw
+        random_dist = np.linalg.norm(random_diff, axis=2)
+        random_weights_diff.append(np.mean(random_dist, axis=0))
+
+    fig = plt.figure()
+    y1 = np.mean(transfer_weights_diff, axis=0)
+    y2 = np.mean(random_weights_diff, axis=0)
+    x = range(len(y1))
+    plt.plot(x, y1, "g-")
+    plt.plot(x, y2, "r-")
+    plt.show()
 
 # --------------------------------------------- Action anticipation ------------------------------------------------- #
 add = False
