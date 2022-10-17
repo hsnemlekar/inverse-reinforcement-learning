@@ -399,13 +399,13 @@ def online_predict_trajectory(task, demos, weights, features, add_features, pref
                 if "part" in pref:
                     pref.remove("part")
                     features = np.hstack((features, add_features[:, -2:-1]))
+                    print("Added new feature - part.")
                 elif "space" in pref:
                     pref.remove("space")
                     features = np.hstack((features, add_features[:, -1:]))
+                    print("Added new feature - space.")
 
-                # if int(user_id) in [15, 17, 20, 21, 25, 27, 29]:
-                #     features = add_features
-                    print("Added new feature.")
+                # features = add_features
 
                 _, n_features = np.shape(features)
                 prev_weights = init(n_features)

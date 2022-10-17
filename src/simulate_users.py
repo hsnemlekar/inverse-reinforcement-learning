@@ -99,9 +99,9 @@ weights = [[0.80, 0.10, 0.10],
 # ---------------------------------------------------- MAIN --------------------------------------------------------- #
 
 # experiment choice
-noisy_users = True
-anti_users = False
-long_task = True
+anti_users = True
+noisy_users = False
+long_task = False
 
 # modify weights
 new_weights = []
@@ -115,6 +115,19 @@ elif anti_users:
     anti_weights = 1 - np.array(weights)
     new_weights.append(anti_weights)
 
+# noisy_weights2 = np.array(weights)
+# noisy_weights2 += np.random.normal(0, 0.2, noisy_weights2.shape)
+#
+# noisy_weights3 = np.array(weights)
+# noisy_weights3 += np.random.normal(0, 0.3, noisy_weights3.shape)
+#
+# noisy_weights4 = np.array(weights)
+# noisy_weights4 += np.random.normal(0, 0.4, noisy_weights4.shape)
+
+# excluded weight
+w_red = 2
+reduced_weights = np.delete(weights, w_red, axis=1)
+
 # initialize canonical task
 canonical_actions = list(range(len(canonical_features)))
 C = CanonicalTask(canonical_features)
@@ -123,20 +136,33 @@ C.enumerate_states()
 C.set_terminal_idx()
 # all_canonical_trajectories = C.enumerate_trajectories([canonical_actions])
 
-# initialize actual task
+canonical_features_red = np.delete(canonical_features, w_red, axis=1)
+C_red = CanonicalTask(canonical_features_red)
+C_red.set_end_state(canonical_actions)
+C_red.enumerate_states()
+C_red.set_terminal_idx()
+
 if long_task:
-    complex_actions = list(range(len(long_features)))
-    X = LongTask(long_features)
-else:
-    complex_actions = list(range(len(complex_features)))
-    X = ComplexTask(complex_features)
+    complex_features = long_features
+
+# initialize actual task
+complex_actions = list(range(len(complex_features)))
+X = ComplexTask(complex_features)
 X.set_end_state(complex_actions)
 X.enumerate_states()
 X.set_terminal_idx()
 # all_complex_trajectories = X.enumerate_trajectories([complex_actions])
 
+complex_features_red = np.delete(complex_features, w_red, axis=1)
+X_red = ComplexTask(complex_features_red)
+X_red.set_end_state(complex_actions)
+X_red.enumerate_states()
+X_red.set_terminal_idx()
+
 # loop over all users
+canonical_shared_demos, complex_shared_demos = [], []
 canonical_demos, complex_demos, new_demos = [], [], []
+# canonical_demos, complex_demos, noisy_demos1, noisy_demos2, noisy_demos3, noisy_demos4 = [], [], [], [], [], []
 for i in range(len(weights)):
 
     print("=======================")
@@ -148,19 +174,38 @@ for i in range(len(weights)):
     complex_abstract_features = np.array([X.get_features(state) for state in X.states])
     complex_abstract_features /= np.linalg.norm(complex_abstract_features, axis=0)
 
+    shared_features = np.array([C_red.get_features(state) for state in C_red.states])
+    canonical_shared_features = shared_features / np.linalg.norm(shared_features, axis=0)
+    complex_shared_features = np.array([X_red.get_features(state) for state in X_red.states])
+    complex_shared_features /= np.linalg.norm(complex_shared_features, axis=0)
+
     # compute user demonstrations
     canonical_rewards = canonical_abstract_features.dot(weights[i])
     complex_rewards = complex_abstract_features.dot(weights[i])
+    canonical_shared_rewards = canonical_shared_features.dot(reduced_weights[i])
+    complex_shared_rewards = complex_shared_features.dot(reduced_weights[i])
+
     qf_canonical, _, _ = value_iteration(C.states, C.actions, C.transition, canonical_rewards, C.terminal_idx)
     qf_complex, _, _ = value_iteration(X.states, X.actions, X.transition, complex_rewards, X.terminal_idx)
+    qf_shared_canonical, _, _ = value_iteration(C_red.states, C_red.actions, C_red.transition, canonical_shared_rewards,
+                                                C_red.terminal_idx)
+    qf_shared_complex, _, _ = value_iteration(X_red.states, X_red.actions, X_red.transition, complex_shared_rewards,
+                                              X_red.terminal_idx)
+
     canonical_demo = rollout_trajectory(qf_canonical, C.states, C.transition, canonical_actions)
     complex_demo = rollout_trajectory(qf_complex, X.states, X.transition, complex_actions)
+    canonical_shared_demo = rollout_trajectory(qf_shared_canonical, C_red.states, C_red.transition, canonical_actions)
+    complex_shared_demo = rollout_trajectory(qf_shared_complex, X_red.states, X_red.transition, complex_actions)
+
+    canonical_demos.append(canonical_demo)
+    complex_demos.append(complex_demo)
+    canonical_shared_demos.append(canonical_shared_demo)
+    complex_shared_demos.append(complex_shared_demo)
 
     print("Canonical demo:", canonical_demo)
-    canonical_demos.append(canonical_demo)
-
     print("  Complex demo:", complex_demo)
-    complex_demos.append(complex_demo)
+    print(" C Shared demo:", canonical_shared_demo)
+    print(" X Shared demo:", complex_shared_demo)
 
     # compute noisy demonstrations
     new_user_demos = []
@@ -177,6 +222,10 @@ save_path = "data/user_demos/"
 np.savetxt(save_path + "weights.csv", weights)
 np.savetxt(save_path + "canonical_demos.csv", canonical_demos)
 np.savetxt(save_path + "complex_demos.csv", complex_demos)
+# np.savetxt("data/user_demos/canonical_shared_demos" + str(w_red) + ".csv", canonical_shared_demos)
+# np.savetxt("data/user_demos/complex_shared_demos" + str(w_red) + ".csv", complex_shared_demos)
+# pickle.dump(all_canonical_trajectories, open("data/user_demos/canonical_trajectories.csv", "wb"))
+# pickle.dump(all_complex_trajectories, open("data/user_demos/complex_trajectories.csv", "wb"))
 
 n_users, n_cases, n_actions = np.shape(new_demos)
 new_demos = list(np.reshape(new_demos, (n_cases, n_users, n_actions)))

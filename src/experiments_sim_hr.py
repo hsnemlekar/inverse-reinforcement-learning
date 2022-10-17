@@ -19,9 +19,9 @@ from scipy import stats
 # pre-process feature value
 def process_val(x):
     if x == "1 (No effort at all)" or x == "1 (No space at all)":
-        x = 1.01
+        x = 1.001
     elif x == "7 (A lot of effort)" or x == "7 (A lot of space)":
-        x = 6.99
+        x = 6.999
     else:
         x = float(x)
 
@@ -79,8 +79,7 @@ df = pd.read_csv(demo_path)
 
 # initialize list of scores
 predict_scores, random1_scores, random2_scores, worst_scores = [], [], [], []
-weights, final_weights = [], []
-predicted_sequences = []
+weights, final_weights, predicted_sequences = [], [], []
 
 # users to consider for evaluation
 # users = [7, 8, 9, 10, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
@@ -181,7 +180,6 @@ for ui, user_id in enumerate(users):
     X.set_terminal_idx()
 
     # initialize an actual task with the full set of features
-    # TODO: extend code to more than one additional feature
     X_add = ComplexTask(complex_feature_values)
     X_add.set_end_state(complex_survey_actions)
     X_add.enumerate_states()
@@ -351,18 +349,19 @@ for ui, user_id in enumerate(users):
                                                                                    transferred_weight,
                                                                                    shared_features,
                                                                                    complex_features,
-                                                                                   [],
+                                                                                   pref[ui],
                                                                                    optim, init,
                                                                                    user_id,
                                                                                    sensitivity=0.0,
                                                                                    consider_options=False)
                     predict_score.append(p_score)
 
+                predicted_sequences.append(predict_sequence)
+
                 # print(ws[-1])
                 # final_weights.append(ws[-1])
 
             else:
-
                 p_score, predict_sequence, _ = predict_trajectory(qf_transfer, X.states,
                                                                   complex_user_demo,
                                                                   X.transition,
@@ -449,9 +448,9 @@ if run_bayes:
     np.savetxt(save_path + "predict" + str(n_users) + "_norm_feat_bayes.csv", predict_scores)
 
 if run_maxent:
-    # np.savetxt(save_path + "weights" + str(n_users) + "_maxent_new_online.csv", weights)
-    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_followup.csv", predict_scores)
-    np.savetxt(save_path + "sequence" + str(n_users) + "_maxent_new_online_followup.csv", predicted_sequences)
+    # np.savetxt(save_path + "weights" + str(n_users) + "_maxent_new_online_add.csv", weights)
+    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_add_followup.csv", predict_scores)
+    np.savetxt(save_path + "sequence" + str(n_users) + "_maxent_new_online_add_followup.csv", predicted_sequences)
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random1_scores)
