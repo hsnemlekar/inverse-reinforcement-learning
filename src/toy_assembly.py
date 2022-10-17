@@ -121,23 +121,29 @@ class CanonicalTask(AssemblyTask):
     """
 
     @staticmethod
-    def transition(s_from, a):
+    def transition(s_from, a, s_to):
+        prob = 0.0
         # preconditions
         if s_from[a] < 1:
             if a in [0, 1, 2]:
-                prob = 1.0
+                tran = 1
             elif a in [3, 4, 5] and s_from[a - 3] == 1:
-                prob = 1.0
+                tran = 1
             else:
-                prob = 0.0
+                tran = 0
         else:
-            prob = 0.0
+            tran = 0
 
         # transition to next state
-        if prob == 1.0:
-            s_to = deepcopy(s_from)
-            s_to[a] += 1
-            return prob, s_to
+        if tran:
+            prob = 0.9
+            s_temp = deepcopy(s_from)
+            s_temp[a] += 1
+
+            if s_temp == s_to:
+                return prob, s_to
+            else:
+                return np.random.choice([(1-prob, s_from), (prob, s_temp)], 1, replace=False, p=[0.1, 0.9])
         else:
             return prob, None
 
@@ -172,23 +178,29 @@ class ComplexTask(AssemblyTask):
     """
 
     @staticmethod
-    def transition(s_from, a):
+    def transition(s_from, a, s_to):
+        prob = 0.0
         # preconditions
         if s_from[a] < 1:
             if a in [0, 1, 2, 3, 4]:
-                prob = 1.0
+                tran = 1
             elif a in [5, 6, 7, 8, 9] and s_from[a - 5] == 1:
-                prob = 1.0
+                tran = 1
             else:
-                prob = 0.0
+                tran = 0
         else:
-            prob = 0.0
+            tran = 0
 
         # transition to next state
-        if prob == 1.0:
-            s_to = deepcopy(s_from)
-            s_to[a] += 1
-            return prob, s_to
+        if tran:
+            prob = 0.9
+            s_temp = deepcopy(s_from)
+            s_temp[a] += 1
+
+            if s_temp == s_to:
+                return prob, s_to
+            else:
+                return np.random.choice([(1 - prob, s_from), (prob, s_temp)], 1, replace=False, p=[0.1, 0.9])
         else:
             return prob, None
 
