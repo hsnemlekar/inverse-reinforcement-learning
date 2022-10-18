@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 from copy import deepcopy
 
@@ -72,7 +73,7 @@ class AssemblyTask:
 
     def get_features(self, state, new_feature=False):
 
-        feature_values = [a*self.features[i] for i, a in enumerate(state)]
+        feature_values = [a * self.features[i] for i, a in enumerate(state)]
         feature_value = np.sum(feature_values, axis=0)
 
         return feature_value
@@ -118,11 +119,14 @@ class CanonicalTask(AssemblyTask):
     Actions:
 
     feature values for each action = [physical_effort, mental_effort, movement]
-    """
+    """    
 
     @staticmethod
-    def transition(s_from, a, s_to):
-        prob = 0.0
+    def transition_list(s_from, a, s_to):
+        tran = 0
+        prob = 0.9
+        tr_list = [(1-prob, s_from)]
+
         # preconditions
         if s_from[a] < 1:
             if a in [0, 1, 2]:
@@ -134,39 +138,51 @@ class CanonicalTask(AssemblyTask):
         else:
             tran = 0
 
-        # transition to next state
         if tran:
-            prob = 0.9
             s_temp = deepcopy(s_from)
             s_temp[a] += 1
 
             if s_temp == s_to:
-                return prob, s_to
+                tr_list.append((prob, s_to))
+                return tr_list
             else:
-                return np.random.choice([(1-prob, s_from), (prob, s_temp)], 1, replace=False, p=[0.1, 0.9])
+                tr_list.append((prob, s_temp))
+                return tr_list
         else:
-            return prob, None
+            return []
+
+    @staticmethod
+    def transition(s_from, a, s_to=None):
+        tr_list = CanonicalTask.transition_list(s_from, a, s_to)
+        if len(tr_list) == 2:
+            return np.random.choice(tr_list, 1, replace=False, p=[0.1, 0.9])
+        elif len(tr_list) == 1:
+            return tr_list[0]
+        else:
+            return 0.0, None
 
     @staticmethod
     def back_transition(s_to, a):
+        tran = 0
+        prob = 0.9
         # preconditions
         if s_to[a] > 0:
             if a in [0, 1, 2] and s_to[a + 3] < 1:
-                p = 1.0
+                tran = 1
             elif a in [3, 4, 5]:
-                p = 1.0
+                tran = 1
             else:
-                p = 0.0
+                tran = 0
         else:
-            p = 0.0
+            tran = 0
 
         # transition to next state
-        if p == 1.0:
+        if tran:
             s_from = deepcopy(s_to)
             s_from[a] -= 1
-            return p, s_from
+            return np.random.choice([(1 - prob, s_to), (prob, s_from)], 1, replace=False, p=[0.1, 0.9])
         else:
-            return p, None
+            return 0.0, None
 
 
 # ------------------------------------------------ Complex Task ----------------------------------------------------- #
@@ -178,8 +194,10 @@ class ComplexTask(AssemblyTask):
     """
 
     @staticmethod
-    def transition(s_from, a, s_to):
-        prob = 0.0
+    def transition_list(s_from, a, s_to=None):
+        tran = 0
+        prob = 0.9
+        tr_list = [(1-prob, s_from)]
         # preconditions
         if s_from[a] < 1:
             if a in [0, 1, 2, 3, 4]:
@@ -193,37 +211,50 @@ class ComplexTask(AssemblyTask):
 
         # transition to next state
         if tran:
-            prob = 0.9
             s_temp = deepcopy(s_from)
             s_temp[a] += 1
 
             if s_temp == s_to:
-                return prob, s_to
+                tr_list.append((prob, s_to))
+                return tr_list
             else:
-                return np.random.choice([(1 - prob, s_from), (prob, s_temp)], 1, replace=False, p=[0.1, 0.9])
+                tr_list.append((prob, s_temp))
+                return tr_list
         else:
-            return prob, None
+            return 0.0, None
+    
+    @staticmethod
+    def transition(s_from, a, s_to=None):
+        tr_list = ComplexTask.transition_list(s_from, a, s_to)
+        if len(tr_list) == 2:
+            return np.random.choice(tr_list, 1, replace=False, p=[0.1, 0.9])
+        elif len(tr_list) == 1:
+            return tr_list[0]
+        else:
+            return 0.0, None
 
     @staticmethod
     def back_transition(s_to, a):
+        tran = 0
+        prob = 0.9
         # preconditions
         if s_to[a] > 0:
             if a in [0, 1, 2, 3, 4] and s_to[a + 5] < 1:
-                p = 1.0
+                tran = 1
             elif a in [5, 6, 7, 8, 9]:
-                p = 1.0
+                tran = 1
             else:
-                p = 0.0
+                tran = 0
         else:
-            p = 0.0
+            tran = 0
 
         # transition to next state
-        if p == 1.0:
+        if tran:
             s_from = deepcopy(s_to)
             s_from[a] -= 1
-            return p, s_from
+            return np.random.choice([(1 - prob, s_to), (prob, s_from)], 1, replace=False, p=[0.1, 0.9])
         else:
-            return p, None
+            return 0.0, None
 
 
 # ------------------------------------------------ Complex Task ----------------------------------------------------- #

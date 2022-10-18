@@ -57,8 +57,8 @@ def compute_expected_svf(task, p_initial, reward, max_iters, eps=1e-5):
         za = np.zeros((n_states, n_actions))  # za: action partition function
         for s_idx in range(n_states):
             for a in actions:
-                prob, sp = task.transition(states[s_idx], a)
-                if sp:
+                sl = task.transition_list(states[s_idx], a, None)
+                for p, sp in sl:
                     sp_idx = task.states.index(sp)
                     if zs[sp_idx] > 0.0:
                         za[s_idx, a] += np.exp(reward[s_idx]) * zs[sp_idx]
@@ -203,7 +203,7 @@ def custom_likelihood(task, trajectories, qf):
 
 # ------------------------------------------------ MDP functions ---------------------------------------------------- #
 
-def random_trajectory(states, demos, transition_function):
+def random_trajectory(states, demos, transition_function, transition_list):
     """
     random predicted trajectory
     """
@@ -231,7 +231,8 @@ def random_trajectory(states, demos, transition_function):
         score.append(acc)
 
         generated_sequence.append(take_action)
-        p, sp = transition_function(states[s], take_action)
+        sl = transition_list(states[s], take_action)
+        p, sp = max(sl, key=lambda x:x[0])
         s = states.index(sp)
         available_actions.remove(take_action)
 
@@ -260,7 +261,8 @@ def rollout_trajectory(qf, states, transition_function, remaining_actions, start
             print(s)
         take_action = np.random.choice(candidates)
         generated_sequence.append(take_action)
-        p, sp = transition_function(states[s], take_action)
+        sl = transition_function(states[s], take_action)
+        p, sp = max(sl, key=lambda x:x[0])
         s = states.index(sp)
         available_actions.remove(take_action)
 
@@ -311,7 +313,8 @@ def predict_trajectory(qf, states, demos, transition_function, sensitivity=0, co
             # c = dp / (qf[s][predict_action] - qf[s][take_action])
             print("Step:", step, "Score:", np.mean(score), "dp:", dp)
 
-        p, sp = transition_function(states[s], take_action)
+        sl = transition_function(states[s], take_action)
+        p, sp = max(sl, kay=lambda x:x[0])
         s = states.index(sp)
         available_actions.remove(take_action)
 
@@ -331,7 +334,7 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
 
     # priors = np.ones(len(samples)) / len(samples)
     rewards = features.dot(weights)
-    qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx, delta=1e-3)
+    qf, _, _ = value_iteration(task.states, task.actions, task.transition_list, rewards, task.terminal_idx, delta=1e-3)
 
     up_weights = []
     track_dist = []
@@ -458,7 +461,7 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
 
             # compute policy for current estimate of weights
             rewards = features.dot(weights)
-            qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx,
+            qf, _, _ = value_iteration(task.states, task.actions, task.transition_list, rewards, task.terminal_idx,
                                        delta=1e-3)
         # else:
         #     init_weights = prev_weights
@@ -470,7 +473,8 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
         # print("Updated weights from", prev_weights, "to", weights)
 
         # priors = priors / np.sum(priors)
-        p, sp = transition_function(states[s], take_action)
+        sl = transition_function(states[s], take_action) #list max
+        p, sp = max(sl, key=lambda x:x[0])
         s = states.index(sp)
         available_actions.remove(take_action)
 

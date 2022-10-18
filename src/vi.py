@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def value_iteration(states, actions, transition, rewards, terminal_states, delta=1e-3):
+def value_iteration(states, actions, transition_list, rewards, terminal_states, delta=1e-3):
     """
     Perform value iteration to calculate converged values for each state
     Args:
@@ -34,9 +34,9 @@ def value_iteration(states, actions, transition, rewards, terminal_states, delta
                 continue
 
             for k_action in actions:
-                prob_ns, ns = transition(states[j_state], k_action)
+                nsl = transition_list(states[j_state], k_action)
                 qf[j_state][k_action] = rewards[j_state]
-                if ns:
+                for prob_ns, ns in nsl:
                     int_ns = states.index(ns)
                     qf[j_state][k_action] += prob_ns * vf[int(int_ns)]
 
