@@ -34,10 +34,7 @@ test_canonical = False
 test_complex = False
 
 # select iterations
-if online_learning:
-    n_train_samples = 3
-else:
-    n_train_samples = 3
+n_train_samples = 10
 n_test_samples = 2
 
 # -------------------------------------------------- Load data ------------------------------------------------------ #
@@ -339,38 +336,43 @@ for ui in range(len(canonical_demos)):
     elif run_random_weights:
         print("Testing for random weights ...")
 
-        # random_priors = 1 - priors
-        # random_priors /= np.sum(random_priors)
-        # weight_idx = np.random.choice(range(len(samples)), size=n_test_samples, p=random_priors)[0]
-
         # weight_idx = np.random.choice(range(len(weight_samples)), size=n_test_samples)
         # random_weights = weight_samples[weight_idx]
+
+        if exists("results/corl_sim/learned_weights.csv"):
+            canonical_inits = pickle.load(open("results/corl_sim/learned_weights.csv", "rb"))
+            random_priors = np.array(canonical_inits[ui])[:, 0, :]
+        else:
+            random_priors = []
 
         init_prior = O.Uniform()
 
         random_score, weights_rand_update, running_acc = [], [], []
         max_likelihood = - np.inf
         for n_sample in range(n_train_samples):
-            random_weight = init_prior(n_features)  # random_weights[n_sample]
+            if len(random_priors) > 0:
+                random_weight = random_priors[n_sample]
+            else:
+                random_weight = init_prior(n_features)
             random_rewards = shared_features.dot(random_weight)
 
             if online_learning:
                 # init = O.Constant(0.5)
                 for _ in range(n_test_samples):
-                    r_score, _, _, up_weights, run_acc = online_predict_trajectory(X, complex_user_demo,
-                                                                                   random_weight,
-                                                                                   shared_features,
-                                                                                   complex_features,
-                                                                                   [],
-                                                                                   optim, init_prior,
-                                                                                   ui,
-                                                                                   sensitivity=0.0,
-                                                                                   consider_options=False)
+                    r_score, _, _, up_r_weights, run_acc = online_predict_trajectory(X, complex_user_demo,
+                                                                                     random_weight,
+                                                                                     shared_features,
+                                                                                     complex_features,
+                                                                                     [],
+                                                                                     optim, init_prior,
+                                                                                     ui,
+                                                                                     sensitivity=0.0,
+                                                                                     consider_options=False)
                     random_score.append(r_score)
                     running_acc.append(run_acc)
 
                     rand_update = [random_weight]
-                    rand_update += up_weights
+                    rand_update += up_r_weights
                     weights_rand_update.append(rand_update)
 
             else:
@@ -401,7 +403,7 @@ if run_bayes:
 if run_maxent:
     pickle.dump(learned_weights, open(save_path + "learned_weights.csv", "wb"))
     pickle.dump(updated_weights, open(save_path + "updated_weights.csv", "wb"))
-    # np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_add0_all0.csv", predict_scores)
+    # np.savetxt(save_path + "predict" + str(n_users) + "_maxent_uni_worst.csv", predict_scores)
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random_scores)

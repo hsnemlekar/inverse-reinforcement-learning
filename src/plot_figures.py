@@ -191,19 +191,23 @@ if plot_weights:
     updated_rand_weights = pickle.load(open("results/corl_sim/updated_rand_weights.csv", "rb"))
 
     # plot weights for given user
-    ui = 1  # user id
-    canonical_init = np.array(learned_weights[ui])[:, 0]
-    canonical_learned = np.array(learned_weights[ui])[:, 1]
-    complex_learned = np.array(updated_weights[ui])[:, -1]
-    random_learned = np.array(updated_rand_weights[ui])[:, -1]
-    fig = plt.figure()
-    ax = plt.axes(projection="3d")
-    ax.scatter3D(true_weights[ui][0], true_weights[ui][1], true_weights[ui][2], color="black", marker="*")
-    ax.scatter3D(canonical_init[:, 0], canonical_init[:, 1], canonical_init[:, 2], color="red")
-    ax.scatter3D(canonical_learned[:, 0], canonical_learned[:, 1], canonical_learned[:, 2], color="blue", marker="h")
-    ax.scatter3D(complex_learned[:, 0], complex_learned[:, 1], complex_learned[:, 2], color="green", marker="^")
-    ax.scatter3D(random_learned[:, 0], random_learned[:, 1], random_learned[:, 2], color="orange", marker="^")
-    plt.show()
+    scatter_plot = True
+    for ui in range(len(learned_weights)):
+        canonical_init = np.mean(np.array(learned_weights[ui])[:, 0], axis=0)
+        canonical_learned = np.mean(np.array(learned_weights[ui])[:, 1], axis=0)
+        step = -1
+        complex_learned = np.mean(np.array(updated_weights[ui])[:, step], axis=0)
+        random_learned = np.mean(np.array(updated_rand_weights[ui])[:, step], axis=0)
+
+        if scatter_plot:
+            fig = plt.figure()
+            ax = plt.axes(projection="3d")
+            ax.scatter3D(true_weights[ui][0], true_weights[ui][1], true_weights[ui][2], c="black", marker="*", s=75)
+            ax.scatter3D(canonical_init[0], canonical_init[1], canonical_init[2], c="red", s=75)
+            ax.scatter3D(canonical_learned[0], canonical_learned[1], canonical_learned[2], c="blue", marker="h", s=75)
+            ax.scatter3D(complex_learned[0], complex_learned[1], complex_learned[2], c="green", marker="^", s=75)
+            ax.scatter3D(random_learned[0], random_learned[1], random_learned[2], c="orange", marker="^", s=75)
+            plt.show()
 
     # plot difference to weights
     transfer_weights_diff, random_weights_diff = [], []
@@ -221,7 +225,16 @@ if plot_weights:
     y2 = np.mean(random_weights_diff, axis=0)
     x = range(len(y1))
     plt.plot(x, y1, "g-")
-    plt.plot(x, y2, "r-")
+    plt.plot(x, y2, "r--")
+    plt.ylim(0.35, 0.7)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    plt.xlabel("Steps", fontsize=16)
+    plt.ylabel("Distance", fontsize=16)
+    plt.legend(["online", "rand_online"], fontsize=16)
+    plt.title("Distance between learned and actual weights", fontsize=16)
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.gcf().subplots_adjust(left=0.15)
     plt.show()
 
 # --------------------------------------------- Action anticipation ------------------------------------------------- #
