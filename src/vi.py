@@ -7,7 +7,7 @@ def value_iteration(states, actions, transition_list, rewards, terminal_states, 
     Args:
         states: list of all states
         actions: list of all actions
-        transition: function that takes in current state and action, and return the next state and probability
+        transition_list: function that takes in current state and action, and return the next state and probability
         terminal_states: index of terminal states
         rewards: list of rewards for each state
         delta: error threshold

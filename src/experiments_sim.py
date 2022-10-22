@@ -367,7 +367,7 @@ for ui in range(len(canonical_demos)):
     # ----------------------------------------- Testing: Random baselines ------------------------------------------- #
     if run_random_actions:
         # score for randomly selecting an action
-        r_score, predict_sequence = random_trajectory(X.states, complex_user_demo, X.transition, X.transition_list)
+        r_score, predict_sequence = random_trajectory(X.states, complex_user_demo, X.transition_list)
         random_scores.append(r_score)
 
     elif run_random_weights:

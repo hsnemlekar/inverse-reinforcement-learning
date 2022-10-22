@@ -1,4 +1,3 @@
-from typing import List
 import numpy as np
 from copy import deepcopy
 
@@ -6,6 +5,13 @@ from copy import deepcopy
 class AssemblyTask:
 
     def __init__(self, features):
+        """
+        Initialize the states and actions in the assembly task.
+        We assume that the state is boolean vector of length equal to the number of actions.
+
+        Args:
+            features: The change in feature values for each action (no. of actions X no. of features)
+        """
 
         self.num_actions, self.num_features = np.shape(features)
         self.actions = np.array(range(self.num_actions))
@@ -33,6 +39,14 @@ class AssemblyTask:
             self.features[:, feature_idx] = feature_ranks
 
     def set_end_state(self, user_demo):
+        """
+        We assume that each action in the user demonstration must be executed to complete the task.
+
+        Args:
+            user_demo: Sequence of actions from the start state to the terminal state
+
+        Returns: Sets terminal state of the task.
+        """
         self.s_end.append(list(np.bincount(user_demo)))
 
     def enumerate_states(self):
@@ -49,7 +63,6 @@ class AssemblyTask:
             self.states += prev_states
 
     def enumerate_trajectories(self, demos):
-
         n_demos, n_steps = np.shape(demos)
         all_traj = [[(-1, -1, 0)]]
         for t in range(n_steps):
@@ -71,8 +84,7 @@ class AssemblyTask:
     def set_terminal_idx(self):
         self.terminal_idx = [self.states.index(s_terminal) for s_terminal in self.s_end]
 
-    def get_features(self, state, new_feature=False):
-
+    def get_features(self, state):
         feature_values = [a * self.features[i] for i, a in enumerate(state)]
         feature_value = np.sum(feature_values, axis=0)
 
@@ -116,71 +128,82 @@ class AssemblyTask:
 
 class CanonicalTask(AssemblyTask):
     """
-    Actions:
-
+    We assume a canonical task with 6 actions.
     feature values for each action = [physical_effort, mental_effort, movement]
-    """    
+    """
 
     @staticmethod
-    def transition_list(s_from, a, s_to):
-        tran = 0
+    def transition_list(s_from, a, s_to=None):
+        """
+        We assume that each action that is executed succeeds with 90% probability.
+        When an action fails the state remains unchanged.
+        Args:
+            s_from: current state
+            a: action to perform in current state
+            s_to: resultant state
+
+        Returns: List of transitions where each transition is a tuple (probability, resultant state)
+        """
+
+        # probability of successfully executing an action
         prob = 0.9
-        tr_list = [(1-prob, s_from)]
 
         # preconditions
         if s_from[a] < 1:
             if a in [0, 1, 2]:
-                tran = 1
+                transit = 1
             elif a in [3, 4, 5] and s_from[a - 3] == 1:
-                tran = 1
+                transit = 1
             else:
-                tran = 0
+                transit = 0
         else:
-            tran = 0
+            transit = 0
 
-        if tran:
-            s_temp = deepcopy(s_from)
-            s_temp[a] += 1
+        # resultant states and probabilities
+        if transit:
+            s_transit = deepcopy(s_from)
+            s_transit[a] += 1
 
-            if s_temp == s_to:
-                tr_list.append((prob, s_to))
+            tr_list = [(1-prob, s_from), (prob, s_transit)]
+
+            if s_to:
+                tr_list = [tr for tr in tr_list if tr[1] == s_to]
                 return tr_list
             else:
-                tr_list.append((prob, s_temp))
                 return tr_list
         else:
             return []
 
     @staticmethod
-    def transition(s_from, a, s_to=None):
-        tr_list = CanonicalTask.transition_list(s_from, a, s_to)
-        if len(tr_list) == 2:
-            return np.random.choice(tr_list, 1, replace=False, p=[0.1, 0.9])
-        elif len(tr_list) == 1:
-            return tr_list[0]
+    def transition(s_from, a):
+        tr_list = CanonicalTask.transition_list(s_from, a)
+        if tr_list:
+            tr = np.random.choice(tr_list, 1, p=[tr[0] for tr in tr_list])
+            return tr[0], tr[1]
         else:
             return 0.0, None
 
     @staticmethod
     def back_transition(s_to, a):
-        tran = 0
-        prob = 0.9
+        """
+        Compute previous state given resultant state and latest action.
+        """
         # preconditions
         if s_to[a] > 0:
             if a in [0, 1, 2] and s_to[a + 3] < 1:
-                tran = 1
+                transit = 1
             elif a in [3, 4, 5]:
-                tran = 1
+                transit = 1
             else:
-                tran = 0
+                transit = 0
         else:
-            tran = 0
+            transit = 0
 
-        # transition to next state
-        if tran:
+        # transition to previous state
+        if transit:
             s_from = deepcopy(s_to)
             s_from[a] -= 1
-            return np.random.choice([(1 - prob, s_to), (prob, s_from)], 1, replace=False, p=[0.1, 0.9])
+            return 1.0, s_from
         else:
             return 0.0, None
 
@@ -189,54 +212,51 @@ class CanonicalTask(AssemblyTask):
 
 class ComplexTask(AssemblyTask):
     """
-    Actions:
-
+    We assume a complex task with 10 actions.
     """
 
     @staticmethod
     def transition_list(s_from, a, s_to=None):
-        tran = 0
+        # probability of successfully executing an action
         prob = 0.9
-        tr_list = [(1-prob, s_from)]
+
         # preconditions
         if s_from[a] < 1:
             if a in [0, 1, 2, 3, 4]:
-                tran = 1
+                transit = 1
             elif a in [5, 6, 7, 8, 9] and s_from[a - 5] == 1:
-                tran = 1
+                transit = 1
             else:
-                tran = 0
+                transit = 0
         else:
-            tran = 0
+            transit = 0
 
-        # transition to next state
-        if tran:
-            s_temp = deepcopy(s_from)
-            s_temp[a] += 1
+        # resultant states and probabilities
+        if transit:
+            s_transit = deepcopy(s_from)
+            s_transit[a] += 1
 
-            if s_temp == s_to:
-                tr_list.append((prob, s_to))
+            tr_list = [(1-prob, s_from), (prob, s_transit)]
+
+            if s_to:
+                tr_list = [tr for tr in tr_list if tr[1] == s_to]
                 return tr_list
             else:
-                tr_list.append((prob, s_temp))
                 return tr_list
         else:
-            return 0.0, None
+            return []
     
     @staticmethod
-    def transition(s_from, a, s_to=None):
-        tr_list = ComplexTask.transition_list(s_from, a, s_to)
-        if len(tr_list) == 2:
-            return np.random.choice(tr_list, 1, replace=False, p=[0.1, 0.9])
-        elif len(tr_list) == 1:
-            return tr_list[0]
+    def transition(s_from, a):
+        tr_list = ComplexTask.transition_list(s_from, a)
+        if tr_list:
+            tr = np.random.choice(tr_list, 1, p=[tr[0] for tr in tr_list])
+            return tr[0], tr[1]
         else:
             return 0.0, None
 
     @staticmethod
     def back_transition(s_to, a):
-        tran = 0
-        prob = 0.9
         # preconditions
         if s_to[a] > 0:
             if a in [0, 1, 2, 3, 4] and s_to[a + 5] < 1:
@@ -252,7 +272,7 @@ class ComplexTask(AssemblyTask):
         if tran:
             s_from = deepcopy(s_to)
             s_from[a] -= 1
-            return np.random.choice([(1 - prob, s_to), (prob, s_from)], 1, replace=False, p=[0.1, 0.9])
+            return 1.0, s_from
         else:
             return 0.0, None
 
@@ -261,25 +281,43 @@ class ComplexTask(AssemblyTask):
 
 class LongTask(AssemblyTask):
     """
-    Actions:
-
+    Longer task with no ordering constraints.
     """
 
     @staticmethod
-    def transition(s_from, a):
+    def transition_list(s_from, a, s_to=None):
+        # probability of successfully executing an action
+        prob = 0.9
+
         # preconditions
         if s_from[a] < 1:
-            prob = 1.0
+            transit = 1
         else:
-            prob = 0.0
+            transit = 0
 
-        # transition to next state
-        if prob == 1.0:
-            s_to = deepcopy(s_from)
-            s_to[a] += 1
-            return prob, s_to
+        # resultant states and probabilities
+        if transit:
+            s_transit = deepcopy(s_from)
+            s_transit[a] += 1
+
+            tr_list = [(1 - prob, s_from), (prob, s_transit)]
+
+            if s_to:
+                tr_list = [tr for tr in tr_list if tr[1] == s_to]
+                return tr_list
+            else:
+                return tr_list
         else:
-            return prob, None
+            return []
+
+    @staticmethod
+    def transition(s_from, a):
+        tr_list = LongTask.transition_list(s_from, a)
+        if tr_list:
+            tr = np.random.choice(tr_list, 1, p=[tr[0] for tr in tr_list])
+            return tr[0], tr[1]
+        else:
+            return 0.0, None
 
     @staticmethod
     def back_transition(s_to, a):

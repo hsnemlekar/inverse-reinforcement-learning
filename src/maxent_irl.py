@@ -57,11 +57,10 @@ def compute_expected_svf(task, p_initial, reward, max_iters, eps=1e-5):
         za = np.zeros((n_states, n_actions))  # za: action partition function
         for s_idx in range(n_states):
             for a in actions:
-                sl = task.transition_list(states[s_idx], a, None)
-                for p, sp in sl:
+                spl = task.transition_list(states[s_idx], a)
+                for p, sp in spl:
                     sp_idx = task.states.index(sp)
-                    if zs[sp_idx] > 0.0:
-                        za[s_idx, a] += np.exp(reward[s_idx]) * zs[sp_idx]
+                    za[s_idx, a] += np.exp(reward[s_idx]) * zs[sp_idx]
 
         zs = za.sum(axis=1)
         zs[terminal] = 1.0
@@ -203,7 +202,7 @@ def custom_likelihood(task, trajectories, qf):
 
 # ------------------------------------------------ MDP functions ---------------------------------------------------- #
 
-def random_trajectory(states, demos, transition_function, transition_list):
+def random_trajectory(states, demos, transition_list):
     """
     random predicted trajectory
     """
@@ -215,8 +214,8 @@ def random_trajectory(states, demos, transition_function, transition_list):
     for take_action in demo:
         candidates = []
         for a in available_actions:
-            p, sp = transition_function(states[s], a)
-            if sp:
+            spl = transition_list(states[s], a)
+            if spl:
                 candidates.append(a)
 
         if not candidates:
@@ -232,14 +231,14 @@ def random_trajectory(states, demos, transition_function, transition_list):
 
         generated_sequence.append(take_action)
         sl = transition_list(states[s], take_action)
-        p, sp = max(sl, key=lambda x:x[0])
+        p, sp = max(sl, key=lambda x: x[0])
         s = states.index(sp)
         available_actions.remove(take_action)
 
     return score, generated_sequence
 
 
-def rollout_trajectory(qf, states, transition_function, remaining_actions, start_state=0):
+def rollout_trajectory(qf, states, transition, remaining_actions, start_state=0):
 
     s = start_state
     available_actions = deepcopy(remaining_actions)
@@ -248,7 +247,7 @@ def rollout_trajectory(qf, states, transition_function, remaining_actions, start
         max_action_val = -np.inf
         candidates = []
         for a in available_actions:
-            p, sp = transition_function(states[s], a)
+            p, sp = transition(states[s], a)
             if sp:
                 if qf[s][a] > max_action_val:
                     candidates = [a]
@@ -261,10 +260,10 @@ def rollout_trajectory(qf, states, transition_function, remaining_actions, start
             print(s)
         take_action = np.random.choice(candidates)
         generated_sequence.append(take_action)
-        sl = transition_function(states[s], take_action)
-        p, sp = max(sl, key=lambda x:x[0])
+        p, sp = transition(states[s], take_action)
+        if sp != s:
+            available_actions.remove(take_action)
         s = states.index(sp)
-        available_actions.remove(take_action)
 
     return generated_sequence
 
