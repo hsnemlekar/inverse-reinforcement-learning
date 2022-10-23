@@ -140,7 +140,7 @@ for ui, user_id in enumerate(users):
 
     # canonical demonstration for training
     canonical_user_demo = [canonical_demo]
-    canonical_trajectories = get_trajectories(C.states, canonical_user_demo, C.transition)
+    canonical_trajectories = get_trajectories(C, canonical_user_demo)
     print("Canonical demo:", canonical_user_demo)
 
     # precompute trajectories for bayesian inference
@@ -186,7 +186,7 @@ for ui, user_id in enumerate(users):
 
     # complex demonstrations for testing (ground truth)
     complex_user_demo = [complex_demo]
-    complex_trajectories = get_trajectories(X.states, complex_user_demo, X.transition)
+    complex_trajectories = get_trajectories(X, complex_user_demo)
     print("Complex demo:", complex_user_demo)
 
     if run_bayes:
@@ -375,7 +375,7 @@ for ui, user_id in enumerate(users):
 
     if run_random_actions:
         # score for randomly selecting an action
-        r_score, predict_sequence = random_trajectory(X.states, complex_user_demo, X.transition)
+        r_score, predict_sequence = random_predict_trajectory(X, complex_user_demo)
         random1_scores.append(r_score)
 
     if run_random_weights:

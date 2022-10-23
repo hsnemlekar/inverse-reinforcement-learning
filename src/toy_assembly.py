@@ -175,10 +175,13 @@ class CanonicalTask(AssemblyTask):
             return []
 
     @staticmethod
-    def transition(s_from, a):
+    def transition(s_from, a, most_likely=False):
         tr_list = CanonicalTask.transition_list(s_from, a)
         if tr_list:
-            tr = np.random.choice(tr_list, 1, p=[tr[0] for tr in tr_list])
+            if most_likely:
+                tr = max(tr_list, key=lambda p: p[0])
+            else:
+                tr = np.random.choice(tr_list, 1, p=[tr[0] for tr in tr_list])
             return tr[0], tr[1]
         else:
             return 0.0, None
@@ -247,10 +250,13 @@ class ComplexTask(AssemblyTask):
             return []
     
     @staticmethod
-    def transition(s_from, a):
+    def transition(s_from, a, most_likely=False):
         tr_list = ComplexTask.transition_list(s_from, a)
         if tr_list:
-            tr = np.random.choice(tr_list, 1, p=[tr[0] for tr in tr_list])
+            if most_likely:
+                tr = max(tr_list, key=lambda p: p[0])
+            else:
+                tr = np.random.choice(tr_list, 1, p=[tr[0] for tr in tr_list])
             return tr[0], tr[1]
         else:
             return 0.0, None

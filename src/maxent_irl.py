@@ -5,14 +5,22 @@ from copy import deepcopy
 
 # ------------------------------------------------ IRL functions ---------------------------------------------------- #
 
-def get_trajectories(states, demonstrations, transition_function):
+def get_trajectories(task, demonstrations):
+    """
+    Convert sequence of actions to sequence of (s, a, s') tuples.
+    Args:
+        task: Task object with states and transitions
+        demonstrations: List of action sequences
+
+    Returns: Sequence of (s, a, s') tuples
+    """
     trajectories = []
     for demo in demonstrations:
-        s = states[0]
+        s = task.states[0]
         trajectory = []
         for action in demo:
-            p, sp = transition_function(s, action)
-            s_idx, sp_idx = states.index(s), states.index(sp)
+            p, sp = task.transition(s, action, most_likely=True)
+            s_idx, sp_idx = task.states.index(s), task.states.index(sp)
             trajectory.append((s_idx, action, sp_idx))
             s = sp
         trajectories.append(trajectory)
@@ -91,7 +99,7 @@ def compute_expected_svf_using_rollouts(task, reward, max_iters):
     states, actions, terminal = task.states, task.actions, task.terminal_idx
     n_states, n_actions = len(states), len(actions)
 
-    qf, vf, _ = value_iteration(states, actions, task.transition, reward, terminal)
+    qf, vf, _ = value_iteration(states, actions, task.transition_list, reward, terminal)
     svf = np.zeros(n_states)
     for _ in range(n_states):
         s_idx = 0
@@ -194,7 +202,7 @@ def custom_likelihood(task, trajectories, qf):
     demos = np.array(trajectories)[:, :, 1]
     likelihood = []
     for demo in demos:
-        p, _, _ = predict_trajectory(qf, task.states, [demo], task.transition, sensitivity=0, consider_options=False)
+        p, _, _ = predict_trajectory(task, qf, [demo])
         likelihood.append(np.mean(p))
 
     return likelihood
@@ -202,9 +210,9 @@ def custom_likelihood(task, trajectories, qf):
 
 # ------------------------------------------------ MDP functions ---------------------------------------------------- #
 
-def random_trajectory(states, demos, transition_list):
+def random_predict_trajectory(task, demos, consider_options=True):
     """
-    random predicted trajectory
+    Randomly predict action at each step and compute prediction accuracy.
     """
 
     demo = demos[0]  # TODO: for demo in demos:
@@ -214,31 +222,32 @@ def random_trajectory(states, demos, transition_list):
     for take_action in demo:
         candidates = []
         for a in available_actions:
-            spl = transition_list(states[s], a)
-            if spl:
+            p, sp = task.transition(task.states[s], a)
+            if sp:
                 candidates.append(a)
 
         if not candidates:
-            print(s)
+            print("No available action in state", s)
 
         options = list(set(candidates))
-        predict_action = np.random.choice(options)
-        if take_action in options:
-            acc = 1/len(options)
+        if consider_options:
+            acc = options.count(take_action) / len(options)
         else:
-            acc = 0.0
+            acc = float(np.random.choice(options) == take_action)
         score.append(acc)
 
         generated_sequence.append(take_action)
-        sl = transition_list(states[s], take_action)
-        p, sp = max(sl, key=lambda x: x[0])
-        s = states.index(sp)
+        p, sp = task.transition(task.states[s], take_action, most_likely=True)
+        s = task.states.index(sp)
         available_actions.remove(take_action)
 
     return score, generated_sequence
 
 
-def rollout_trajectory(qf, states, transition, remaining_actions, start_state=0):
+def rollout_trajectory(task, qf, remaining_actions, start_state=0):
+    """
+    Execute remaining actions from state state based on qf (action values).
+    """
 
     s = start_state
     available_actions = deepcopy(remaining_actions)
@@ -247,7 +256,7 @@ def rollout_trajectory(qf, states, transition, remaining_actions, start_state=0)
         max_action_val = -np.inf
         candidates = []
         for a in available_actions:
-            p, sp = transition(states[s], a)
+            p, sp = task.transition(task.states[s], a)
             if sp:
                 if qf[s][a] > max_action_val:
                     candidates = [a]
@@ -260,17 +269,19 @@ def rollout_trajectory(qf, states, transition, remaining_actions, start_state=0)
             print(s)
         take_action = np.random.choice(candidates)
         generated_sequence.append(take_action)
-        p, sp = transition(states[s], take_action)
+        p, sp = task.transition(task.states[s], take_action)
         if sp != s:
             available_actions.remove(take_action)
-        s = states.index(sp)
+        s = task.states.index(sp)
 
     return generated_sequence
 
 
-def predict_trajectory(qf, states, demos, transition_list, sensitivity=0, consider_options=False):
+def predict_trajectory(task, qf, demos, sensitivity=0, consider_options=False):
+    """
+    Predict action at each step of user demonstration based on qf (action values).
+    """
 
-    # assume the same starting state and available actions for all users
     demo = demos[0]  # TODO: for demo in demos:
     s, available_actions = 0, list(demo.copy())
 
@@ -280,8 +291,8 @@ def predict_trajectory(qf, states, demos, transition_list, sensitivity=0, consid
         max_action_val = -np.inf
         candidates, applicants = [], []
         for a in available_actions:
-            spl = transition_list(states[s], a)
-            if spl:
+            p, sp = task.transition(task.states[s], a)
+            if sp:
                 applicants.append(a)
                 if qf[s][a] > (1+sensitivity)*max_action_val:
                     candidates = [a]
@@ -296,28 +307,23 @@ def predict_trajectory(qf, states, demos, transition_list, sensitivity=0, consid
         predictions.append(candidates)
         options.append(applicants)
 
-        if consider_options and (len(candidates) < len(applicants)):
-            score = [take_action in candidates]
+        if consider_options:
+            acc = options.count(take_action) / len(options)
         else:
-            score = []
-            for predict_action in candidates:
-                score.append(predict_action == take_action)
-        scores.append(np.mean(score))
-
-        future_actions = deepcopy(available_actions)
+            acc = float(np.random.choice(options) == take_action)
+        scores.append(acc)
 
         # check inaccuracy
-        # if np.mean(score) < 1.0:
-        #     ro = rollout_trajectory(qf, states, transition, future_actions, s)
-        #
-        #     # confidence
-        #     dp = ro.index(take_action)
-        #     # c = dp / (qf[s][predict_action] - qf[s][take_action])
-        #     print("Step:", step, "Score:", np.mean(score), "dp:", dp)
+        if acc < 1.0:
+            ro = rollout_trajectory(task, qf, available_actions, s)
 
-        sl = transition_list(states[s], take_action)
-        p, sp = max(sl, kay=lambda x: x[0])
-        s = states.index(sp)
+            # confidence
+            dp = ro.index(take_action)
+            # c = dp / (qf[s][predict_action] - qf[s][take_action])
+            print("Step:", step, "Score:", acc, "dp:", dp)
+
+        p, sp = task.transition(task.states[s], take_action, most_likely=True)
+        s = task.states.index(sp)
         available_actions.remove(take_action)
 
     return scores, predictions, options
@@ -326,32 +332,30 @@ def predict_trajectory(qf, states, demos, transition_list, sensitivity=0, consid
 # ------------------------------------------------- Contribution ---------------------------------------------------- #
 
 def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, weights, features, add_features,
-                              samples, pref, optim, init, user_id, sensitivity=0, consider_options=False):
+                              samples, pref, optim, init, user_id, sensitivity=0, consider_options=True):
+    """
+    Predict action at each step of user demonstration based on qf (action values),
+    and by updating the qf when the prediction is incorrect.
+    """
 
     # assume the same starting state and available actions for all users
     demo = demos[0]
     s, available_actions = 0, list(demo.copy())
-    states = task.states
 
     # priors = np.ones(len(samples)) / len(samples)
     rewards = features.dot(weights)
     qf, _, _ = value_iteration(task.states, task.actions, task.transition_list, rewards, task.terminal_idx, delta=1e-3)
 
-    up_weights = []
-    track_dist = []
+    up_weights, running_acc = [], []
     scores, predictions, options = [], [], []
     for step, take_action in enumerate(demo):
-
-        # # compute policy for current estimate of weights
-        # rewards = features.dot(weights)
-        # qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx, delta=1e-2)
 
         # anticipate user action in current state
         max_action_val = -np.inf
         candidates, applicants = [], []
         for a in available_actions:
-            spl = task.transition_list(states[s], a)
-            if spl:
+            p, sp = task.transition(task.states[s], a)
+            if sp:
                 applicants.append(a)
                 if qf[s][a] > (1 + sensitivity) * max_action_val:
                     candidates = [a]
@@ -365,64 +369,53 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
         predictions.append(candidates)
         options.append(applicants)
 
-        # int_seq = rollout_trajectory(qf, states, transition_function, available_actions, s)
-
         # calculate accuracy of prediction
-        if consider_options and (len(candidates) < len(applicants)):
-            score = [take_action in candidates]
+        if consider_options:
+            acc = candidates.count(take_action) / len(options)
         else:
-            dist = []
-            score = []
-            for predict_action in candidates:
-                # dist.append(int_seq.index(take_action))
-                score.append(predict_action == take_action)
-        scores.append(np.mean(score))
-        # track_dist.append(np.mean(dist))
+            acc = float(np.random.choice(candidates) == take_action)
+        scores.append(acc)
         print("Predicted", candidates, "for", take_action)
 
         # update weights based on correct user action
         future_actions = deepcopy(available_actions)
 
-        if np.mean(score) < 1.0:  # or step == 0:
-
-            ro = rollout_trajectory(qf, states, task.transition, future_actions, s)
+        if acc < 1.0:  # or step == 0:
 
             # confidence
-            dp = ro.index(take_action)
-            # c = dp / (qf[s][predict_action] - qf[s][take_action])
+            dfs = []
+            for predict_action in candidates:
+                ro = rollout_trajectory(qf, task.states, task.transition, future_actions, s)
+                df = ro.index(take_action)
+                # c = df / (qf[s][predict_action] - qf[s][take_action])
+                dfs.append(df)
+            dp = np.mean(dfs)
 
-            print("Step:", step, "Score:", np.mean(score), "dp:", dp, "dq:", qf[s][predict_action] - qf[s][take_action])
-            if dp > 6:
+            print("Step:", step, "Score:", acc, "dp:", dp, "dq:", qf[s][predict_action] - qf[s][take_action])
+
+            if dp > 3:
 
                 # if "part" in pref:
                 #     pref.remove("part")
                 #     features = np.hstack((features, add_features[:, -2:-1]))
+                #     print("Added new feature.")
                 # elif "space" in pref:
                 #     pref.remove("space")
                 #     features = np.hstack((features, add_features[:, -1:]))
-
-                # if int(user_id) in [7, 9, 14, 15, 17, 19, 20, 21, 23, 24, 25, 27, 29]:
-                # weights = np.append(weights, np.random.sample())
-                # _, n_features = np.shape(features)
-                # rewards = features.dot(weights)
-                # qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx)
-                print("Added new feature.")
+                #     print("Added new feature.")
 
                 _, n_features = np.shape(features)
                 prev_weights = init(n_features)
             else:
                 prev_weights = deepcopy(weights)
 
-            # if c > 5000:
-            #     print("More then 5000", step, c, dp)
-
             # infer intended user action
-            p, sp = transition_function(states[s], take_action)
-            future_actions.remove(take_action)
-            ro = rollout_trajectory(qf, states, task.transition, future_actions, states.index(sp))
+            p, sp = task.transition(task.states[s], take_action, most_likely=True)
+            future_actions.remove(task.take_action)
+            ro = rollout_trajectory(qf, task.states, task.transition, future_actions, task.states.index(sp))
             future_actions.append(take_action)
             intended_user_demo = [demo[:step] + [take_action] + ro]
-            intended_trajectories = get_trajectories(states, intended_user_demo, transition_function)
+            intended_trajectories = get_trajectories(task, intended_user_demo)
 
             # compute set from which user picks the intended action
             # all_complex_trajectories = [traj for traj in task_trajectories if all(traj[:step, 1] == demo[:step])]
@@ -468,9 +461,8 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
         up_weights.append(weights)
 
         # priors = priors / np.sum(priors)
-        sl = task.transition_list(states[s], take_action)
-        p, sp = max(sl, key=lambda x: x[0])
-        s = states.index(sp)
+        p, sp = task.transition_list(task.states[s], take_action, most_likely=True)
+        s = task.states.index(sp)
         available_actions.remove(take_action)
 
-    return scores, predictions, options, up_weights, track_dist
+    return scores, predictions, options, up_weights, running_acc

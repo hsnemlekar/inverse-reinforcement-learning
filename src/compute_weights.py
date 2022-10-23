@@ -92,7 +92,7 @@ if rank_features:
 
 # demonstrations
 canonical_user_demo = [canonical_demo]
-canonical_trajectories = get_trajectories(C.states, canonical_user_demo, C.transition)
+canonical_trajectories = get_trajectories(C, canonical_user_demo)
 
 print("Training ...")
 

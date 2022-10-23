@@ -82,10 +82,10 @@ weights_adverse = [[0.60, 0.20, 0.20, 0.60],
 # -------------------------------------------------- Experiment ----------------------------------------------------- #
 
 # select algorithm
-run_maxent = False
+run_maxent = True
 run_bayes = False
 run_random_actions = False
-run_random_weights = True
+run_random_weights = False
 online_learning = True
 
 # algorithm parameters
@@ -225,11 +225,11 @@ for ui in range(len(canonical_demos)):
 
     # canonical demonstrations
     canonical_user_demo = [list(canonical_demos[ui])]
-    canonical_trajectories = get_trajectories(C.states, canonical_user_demo, C.transition)
+    canonical_trajectories = get_trajectories(C, canonical_user_demo)
 
     # complex demonstrations (ground truth)
     complex_user_demo = [list(complex_demos[ui])]
-    complex_trajectories = get_trajectories(X.states, complex_user_demo, X.transition)
+    complex_trajectories = get_trajectories(X, complex_user_demo)
 
     # ---------------------------------------- Training: Learn weights ---------------------------------------------- #
 
@@ -367,7 +367,7 @@ for ui in range(len(canonical_demos)):
     # ----------------------------------------- Testing: Random baselines ------------------------------------------- #
     if run_random_actions:
         # score for randomly selecting an action
-        r_score, predict_sequence = random_trajectory(X.states, complex_user_demo, X.transition_list)
+        r_score, predict_sequence = random_predict_trajectory(X, complex_user_demo)
         random_scores.append(r_score)
 
     elif run_random_weights:

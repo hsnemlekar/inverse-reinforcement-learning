@@ -152,12 +152,12 @@ for i in range(len(weights)):
     qf_noisy3, _, _ = value_iteration(X.states, X.actions, X.transition, noisy_rewards3, X.terminal_idx)
     qf_noisy4, _, _ = value_iteration(X.states, X.actions, X.transition, noisy_rewards4, X.terminal_idx)
 
-    canonical_demo = rollout_trajectory(qf_canonical, C.states, C.transition, canonical_actions)
-    complex_demo = rollout_trajectory(qf_complex, X.states, X.transition, complex_actions)
-    noisy_demo1 = rollout_trajectory(qf_noisy1, X.states, X.transition, complex_actions)
-    noisy_demo2 = rollout_trajectory(qf_noisy2, X.states, X.transition, complex_actions)
-    noisy_demo3 = rollout_trajectory(qf_noisy3, X.states, X.transition, complex_actions)
-    noisy_demo4 = rollout_trajectory(qf_noisy4, X.states, X.transition, complex_actions)
+    canonical_demo = rollout_trajectory(C, qf_canonical, canonical_actions)
+    complex_demo = rollout_trajectory(X, qf_complex, complex_actions)
+    noisy_demo1 = rollout_trajectory(X, qf_noisy1, complex_actions)
+    noisy_demo2 = rollout_trajectory(X, qf_noisy2, complex_actions)
+    noisy_demo3 = rollout_trajectory(X, qf_noisy3, complex_actions)
+    noisy_demo4 = rollout_trajectory(X, qf_noisy4, complex_actions)
 
     canonical_demos.append(canonical_demo)
     complex_demos.append(complex_demo)
