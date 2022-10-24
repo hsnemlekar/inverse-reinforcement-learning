@@ -99,9 +99,9 @@ test_complex = False
 
 # select samples
 if online_learning:
-    n_train_samples = 15
+    n_train_samples = 5  # 15
 else:
-    n_train_samples = 30
+    n_train_samples = 5  # 30
 n_test_samples = 2
 
 # select initial distribution of weights
@@ -321,7 +321,7 @@ for ui in range(len(canonical_demos)):
             transfer_rewards_abstract = shared_features.dot(transferred_weight)
 
             # compute policy for transferred rewards
-            qf_transfer, _, _ = value_iteration(X.states, X.actions, X.transition, transfer_rewards_abstract,
+            qf_transfer, _, _ = value_iteration(X.states, X.actions, X.transition_list, transfer_rewards_abstract,
                                                 X.terminal_idx)
 
             # score for predicting user action at each time step
@@ -425,7 +425,7 @@ if run_bayes:
 
 if run_maxent:
     # np.savetxt(save_path + "weights" + str(n_users) + "_maxent_uni.csv", weights)
-    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online.csv", predict_scores)
+    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_stochastic.csv", predict_scores)
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random_scores)

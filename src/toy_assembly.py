@@ -55,7 +55,7 @@ class AssemblyTask:
             next_states = []
             for state in prev_states:
                 for action in self.actions:
-                    p, next_state = self.transition(state, action)
+                    p, next_state = self.transition(state, action, most_likely=True)
                     if next_state and (next_state not in next_states) and (next_state not in self.states):
                         next_states.append(next_state)
 
@@ -181,7 +181,8 @@ class CanonicalTask(AssemblyTask):
             if most_likely:
                 tr = max(tr_list, key=lambda p: p[0])
             else:
-                tr = np.random.choice(tr_list, 1, p=[tr[0] for tr in tr_list])
+                tr_idx = np.random.choice(range(len(tr_list)), p=[tr[0] for tr in tr_list])
+                tr = tr_list[tr_idx]
             return tr[0], tr[1]
         else:
             return 0.0, None
@@ -256,7 +257,8 @@ class ComplexTask(AssemblyTask):
             if most_likely:
                 tr = max(tr_list, key=lambda p: p[0])
             else:
-                tr = np.random.choice(tr_list, 1, p=[tr[0] for tr in tr_list])
+                tr_idx = np.random.choice(range(len(tr_list)), p=[tr[0] for tr in tr_list])
+                tr = tr_list[tr_idx]
             return tr[0], tr[1]
         else:
             return 0.0, None
