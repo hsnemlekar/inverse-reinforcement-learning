@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import stats as st
 from vi import value_iteration
 from copy import deepcopy
 
@@ -244,14 +245,14 @@ def random_predict_trajectory(task, demos, consider_options=True):
     return score, generated_sequence
 
 
-def rollout_trajectory(task, qf, remaining_actions, start_state=0):
+def rollout_trajectory(task, qf, remaining_actions, start_state=0, state_info = False):
     """
     Execute remaining actions from state state based on qf (action values).
     """
 
     s = start_state
     available_actions = deepcopy(remaining_actions)
-    generated_sequence = []
+    generated_sequence, generated_trajectory = [], []
     while len(available_actions) > 0:
         max_action_val = -np.inf
         candidates = []
@@ -270,9 +271,13 @@ def rollout_trajectory(task, qf, remaining_actions, start_state=0):
         take_action = np.random.choice(candidates)
         generated_sequence.append(take_action)
         p, sp = task.transition(task.states[s], take_action)
+        generated_trajectory.append((s, take_action, sp))
         if sp != s:
             available_actions.remove(take_action)
         s = task.states.index(sp)
+
+    if state_info:
+        return generated_trajectory
 
     return generated_sequence
 
@@ -384,12 +389,12 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
 
             # confidence
             dfs = []
-            for predict_action in candidates:
-                ro = rollout_trajectory(qf, task.states, task.transition, future_actions, s)
+            for i in 50: 
+                ro = rollout_trajectory(qf, task.states, task.transition, future_actions, s, state_info=True)
                 df = ro.index(take_action)
                 # c = df / (qf[s][predict_action] - qf[s][take_action])
                 dfs.append(df)
-            dp = np.mean(dfs)
+            dp = st.mode(dfs)
 
             print("Step:", step, "Score:", acc, "dp:", dp, "dq:", qf[s][predict_action] - qf[s][take_action])
 
@@ -412,10 +417,12 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
             # infer intended user action
             p, sp = task.transition(task.states[s], take_action, most_likely=True)
             future_actions.remove(task.take_action)
-            ro = rollout_trajectory(qf, task.states, task.transition, future_actions, task.states.index(sp))
+            ro = rollout_trajectory(qf, task.states, task.transition, future_actions, task.states.index(sp),state_info=True)
+            
+            # intended_user_demo = [demo[:step] + [take_action] + ro]
+            # intended_trajectories = get_trajectories(task, intended_user_demo)
+
             future_actions.append(take_action)
-            intended_user_demo = [demo[:step] + [take_action] + ro]
-            intended_trajectories = get_trajectories(task, intended_user_demo)
 
             # compute set from which user picks the intended action
             # all_complex_trajectories = [traj for traj in task_trajectories if all(traj[:step, 1] == demo[:step])]
