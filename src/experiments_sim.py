@@ -280,8 +280,8 @@ for ui in range(len(canonical_demos)):
 
             # score for predicting user action at each time step
             if online_learning:
+                init = O.Uniform()  # O.Constant(0.5)
                 for n_sample in range(n_test_samples):
-                    init = O.Uniform()  # O.Constant(0.5)
                     p_score, _, _, up_weights, run_acc = online_predict_trajectory(X, complex_user_demo,
                                                                                    transferred_weight,
                                                                                    shared_features,
