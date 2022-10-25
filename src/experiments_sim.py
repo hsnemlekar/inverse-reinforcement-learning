@@ -82,10 +82,10 @@ weights_adverse = [[0.60, 0.20, 0.20, 0.60],
 # -------------------------------------------------- Experiment ----------------------------------------------------- #
 
 # select algorithm
-run_maxent = True
+run_maxent = False
 run_bayes = False
 run_random_actions = False
-run_random_weights = False
+run_random_weights = True
 online_learning = True
 
 # algorithm parameters
@@ -341,9 +341,8 @@ for ui in range(len(canonical_demos)):
                                                                                    consider_options=False)
                     predict_score.append(p_score)
             else:
-                p_score, predict_sequence, _ = predict_trajectory(qf_transfer, X.states,
+                p_score, predict_sequence, _ = predict_trajectory(X, qf_transfer,
                                                                   complex_user_demo,
-                                                                  X.transition,
                                                                   sensitivity=0.0,
                                                                   consider_options=False)
                 predict_score.append(p_score)
@@ -431,6 +430,6 @@ if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random_scores)
 
 if run_random_weights:
-    np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online.csv", random_scores)
+    np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online_stochastic.csv", random_scores)
 
 print("Done.")

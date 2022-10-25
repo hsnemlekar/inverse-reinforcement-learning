@@ -109,14 +109,14 @@ for i, q_idx in enumerate(plot_q):
 
 dir_path = os.path.dirname(__file__)
 if sim:
-    file_path = dir_path + "/results/corl_sim_copy/"
+    file_path = dir_path + "/results/corl_sim/"
     prior1_scores = np.loadtxt(file_path + "predict20_maxent_uni.csv")
     predict1_scores = np.loadtxt(file_path + "predict20_maxent_new_online.csv")
     random1_scores = np.loadtxt(file_path + "random20_weights_new_online.csv")
 
-    prior2_scores = np.loadtxt(file_path + "predict20_maxent_uni_noisy1.csv")
-    predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy1.csv")
-    random2_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy1.csv")
+    prior2_scores = np.loadtxt(file_path + "predict20_maxent_uni_stochastic.csv")
+    predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_stochastic.csv")
+    random2_scores = np.loadtxt(file_path + "random20_weights_new_online_stochastic.csv")
 
     prior3_scores = np.loadtxt(file_path + "predict20_maxent_uni_noisy2.csv")
     predict3_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy2.csv")
@@ -163,7 +163,7 @@ if plot_time:
     # plt.savefig("figures/corl/idle_time.png", bbox_inches='tight')
 
 # --------------------------------------------- Action anticipation ------------------------------------------------- #
-add = True
+add = False
 if not sim and not add:
     # Split for adding feature
     # predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
@@ -239,30 +239,21 @@ cp = sns.color_palette()
 
 if plot_bar:
     if sim:
-        plt.figure(figsize=(9, 5))
-        X = ["consistent"]*3*n_users + \
-            ["0.1"]*3*n_users + \
-            ["0.2"]*3*n_users + \
-            ["0.3"]*3*n_users + \
-            ["0.4"]*3*n_users
+        plt.figure(figsize=(8, 5))
+        X = ["deterministic"]*3*n_users + \
+            ["stochastic"]*3*n_users
         Y = list(prior1_users) + list(random1_users) + list(predict1_users) + \
-            list(prior2_users) + list(random2_users) + list(predict2_users) + \
-            list(prior3_users) + list(random3_users) + list(predict3_users) + \
-            list(prior4_users) + list(random4_users) + list(predict4_users) + \
-            list(prior5_users) + list(random5_users) + list(predict5_users)
-        Z = ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users + \
-            ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users + \
-            ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users + \
-            ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users + \
-            ["prior"]*n_users + ["random"]*n_users + ["online"]*n_users
+            list(prior2_users) + list(random2_users) + list(predict2_users)
+        Z = ["prior"]*n_users + ["rand-online"]*n_users + ["online"]*n_users + \
+            ["prior"]*n_users + ["rand-online"]*n_users + ["online"]*n_users
         sns.barplot(x=X, y=Y, hue=Z, ci=68, errwidth=2, capsize=.1)
-        plt.ylim(0., 1.1)
+        plt.ylim(0.45, 0.85)
         plt.xticks(fontsize=18)
         plt.yticks(fontsize=16)
         plt.ylabel("Accuracy", fontsize=18)
         plt.legend(fontsize=18, ncol=3, loc=9)
         # plt.gcf().subplots_adjust(bottom=0.175)
-        # plt.gcf().subplots_adjust(left=0.175)
+        plt.gcf().subplots_adjust(left=0.15)
         # plt.savefig("figures/corl/sim.png", bbox_inches='tight')
         plt.show()
     else:

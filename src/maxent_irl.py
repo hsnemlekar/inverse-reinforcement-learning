@@ -313,11 +313,13 @@ def predict_trajectory(task, qf, demos, sensitivity=0, consider_options=False):
         predictions.append(candidates)
         options.append(applicants)
 
+        predict_action = np.random.choice(candidates)
         if consider_options:
-            acc = options.count(take_action) / len(options)
+            acc = candidates.count(take_action) / len(candidates)
         else:
-            acc = float(np.random.choice(options) == take_action)
+            acc = float(predict_action == take_action)
         scores.append(acc)
+        print("Predicted", candidates, "for", take_action)
 
         # check inaccuracy
         if acc < 1.0:
@@ -378,7 +380,7 @@ def online_predict_trajectory(task, demos, task_trajectories, traj_likelihoods, 
         # calculate accuracy of prediction
         predict_action = np.random.choice(candidates)
         if consider_options:
-            acc = candidates.count(take_action) / len(options)
+            acc = candidates.count(take_action) / len(candidates)
         else:
             acc = float(predict_action == take_action)
         scores.append(acc)
