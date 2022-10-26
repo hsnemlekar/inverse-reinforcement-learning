@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from import_qualtrics import get_qualtrics_survey
 
 # ---------------------------------------------------- Result ------------------------------------------------------- #
-sim = False
+sim = True
 print_subjective = False
 plot_subjective = False
 plot_time = False
@@ -183,7 +183,7 @@ if plot_time:
 
 
 # ----------------------------------------------- Weights update ---------------------------------------------------- #
-
+plot_scatter = False
 if plot_weights:
     if sim:
         true_weights = np.loadtxt(data_path + "user_demos/weights.csv").astype(float)
@@ -191,22 +191,23 @@ if plot_weights:
         updated_weights = pickle.load(open("results/corl_sim/updated_weights.csv", "rb"))
         updated_rand_weights = pickle.load(open("results/corl_sim/updated_rand_weights.csv", "rb"))
 
-        # plot weights for given user
-        for ui in range(len(learned_weights)):
-            canonical_init = np.mean(np.array(learned_weights[ui])[:, 0], axis=0)
-            canonical_learned = np.mean(np.array(learned_weights[ui])[:, 1], axis=0)
-            step = -1
-            complex_learned = np.mean(np.array(updated_weights[ui])[:, step], axis=0)
-            random_learned = np.mean(np.array(updated_rand_weights[ui])[:, step], axis=0)
+        if plot_scatter:
+            # plot weights for given user
+            for ui in range(len(learned_weights)):
+                canonical_init = np.mean(np.array(learned_weights[ui])[:, 0], axis=0)
+                canonical_learned = np.mean(np.array(learned_weights[ui])[:, 1], axis=0)
+                step = -1
+                complex_learned = np.mean(np.array(updated_weights[ui])[:, step], axis=0)
+                random_learned = np.mean(np.array(updated_rand_weights[ui])[:, step], axis=0)
 
-            fig = plt.figure()
-            ax = plt.axes(projection="3d")
-            ax.scatter3D(true_weights[ui][0], true_weights[ui][1], true_weights[ui][2], c="black", marker="*", s=75)
-            ax.scatter3D(canonical_init[0], canonical_init[1], canonical_init[2], c="red", s=75)
-            ax.scatter3D(canonical_learned[0], canonical_learned[1], canonical_learned[2], c="blue", marker="h", s=75)
-            ax.scatter3D(complex_learned[0], complex_learned[1], complex_learned[2], c="green", marker="^", s=75)
-            ax.scatter3D(random_learned[0], random_learned[1], random_learned[2], c="orange", marker="^", s=75)
-            plt.show()
+                fig = plt.figure()
+                ax = plt.axes(projection="3d")
+                ax.scatter3D(true_weights[ui][0], true_weights[ui][1], true_weights[ui][2], c="black", marker="*", s=75)
+                ax.scatter3D(canonical_init[0], canonical_init[1], canonical_init[2], c="red", s=75)
+                ax.scatter3D(canonical_learned[0], canonical_learned[1], canonical_learned[2], c="blue", marker="h", s=75)
+                ax.scatter3D(complex_learned[0], complex_learned[1], complex_learned[2], c="green", marker="^", s=75)
+                ax.scatter3D(random_learned[0], random_learned[1], random_learned[2], c="orange", marker="^", s=75)
+                plt.show()
     else:
         true_weights = pickle.load(open("results/hri_post/true_weights.csv", "rb"))
         learned_weights = pickle.load(open("results/hri_post/learned_weights.csv", "rb"))
@@ -221,17 +222,17 @@ if plot_weights:
         transfer_dist = np.linalg.norm(transfer_diff, axis=2)
         transfer_weights_diff.append(np.mean(transfer_dist, axis=0))
 
-        # random_diff = updated_rand_weights[ui] - tw
-        # random_dist = np.linalg.norm(random_diff, axis=2)
-        # random_weights_diff.append(np.mean(random_dist, axis=0))
+        random_diff = updated_rand_weights[ui] - tw
+        random_dist = np.linalg.norm(random_diff, axis=2)
+        random_weights_diff.append(np.mean(random_dist, axis=0))
 
     fig = plt.figure()
     y1 = np.mean(transfer_weights_diff, axis=0)
-    # y2 = np.mean(random_weights_diff, axis=0)
+    y2 = np.mean(random_weights_diff, axis=0)
     x = range(len(y1))
     plt.plot(x, y1, "g-")
-    # plt.plot(x, y2, "r--")
-    # plt.ylim(0.35, 0.7)
+    plt.plot(x, y2, "r--")
+    plt.ylim(0.35, 0.7)
     plt.xticks(fontsize=16)
     plt.yticks(fontsize=16)
     plt.xlabel("Steps", fontsize=16)
