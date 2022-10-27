@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from import_qualtrics import get_qualtrics_survey
 
 # ---------------------------------------------------- Result ------------------------------------------------------- #
-sim = False
+sim = True
 print_subjective = False
 plot_subjective = False
 plot_time = False
@@ -191,52 +191,74 @@ if plot_weights:
         updated_weights = pickle.load(open("results/corl_sim/updated_weights.csv", "rb"))
         updated_rand_weights = pickle.load(open("results/corl_sim/updated_rand_weights.csv", "rb"))
 
-        # plot weights for given user
-        for ui in range(len(learned_weights)):
-            canonical_init = np.mean(np.array(learned_weights[ui])[:, 0], axis=0)
-            canonical_learned = np.mean(np.array(learned_weights[ui])[:, 1], axis=0)
-            step = -1
-            complex_learned = np.mean(np.array(updated_weights[ui])[:, step], axis=0)
-            random_learned = np.mean(np.array(updated_rand_weights[ui])[:, step], axis=0)
-
-            fig = plt.figure()
-            ax = plt.axes(projection="3d")
-            ax.scatter3D(true_weights[ui][0], true_weights[ui][1], true_weights[ui][2], c="black", marker="*", s=75)
-            ax.scatter3D(canonical_init[0], canonical_init[1], canonical_init[2], c="red", s=75)
-            ax.scatter3D(canonical_learned[0], canonical_learned[1], canonical_learned[2], c="blue", marker="h", s=75)
-            ax.scatter3D(complex_learned[0], complex_learned[1], complex_learned[2], c="green", marker="^", s=75)
-            ax.scatter3D(random_learned[0], random_learned[1], random_learned[2], c="orange", marker="^", s=75)
-            plt.show()
+        # # plot weights for given user
+        # for ui in range(len(learned_weights)):
+        #     canonical_init = np.mean(np.array(learned_weights[ui])[:, 0], axis=0)
+        #     canonical_learned = np.mean(np.array(learned_weights[ui])[:, 1], axis=0)
+        #     step = -1
+        #     complex_learned = np.mean(np.array(updated_weights[ui])[:, step], axis=0)
+        #     random_learned = np.mean(np.array(updated_rand_weights[ui])[:, step], axis=0)
+        #
+        #     fig = plt.figure()
+        #     ax = plt.axes(projection="3d")
+        #     ax.scatter3D(true_weights[ui][0], true_weights[ui][1], true_weights[ui][2], c="black", marker="*", s=75)
+        #     ax.scatter3D(canonical_init[0], canonical_init[1], canonical_init[2], c="red", s=75)
+        #     ax.scatter3D(canonical_learned[0], canonical_learned[1], canonical_learned[2], c="blue", marker="h", s=75)
+        #     ax.scatter3D(complex_learned[0], complex_learned[1], complex_learned[2], c="green", marker="^", s=75)
+        #     ax.scatter3D(random_learned[0], random_learned[1], random_learned[2], c="orange", marker="^", s=75)
+        #     plt.show()
     else:
-        true_weights = pickle.load(open("results/hri_post/true_weights.csv", "rb"))
-        learned_weights = pickle.load(open("results/hri_post/learned_weights.csv", "rb"))
-        updated_weights = pickle.load(open("results/hri_post/updated_weights.csv", "rb"))
+        true_weights = pickle.load(open("results/hri_post/true_weights_fixed_0.8.csv", "rb"))
+        learned_weights = pickle.load(open("results/hri_post/learned_weights_fixed_0.8.csv", "rb"))
+        updated_weights = pickle.load(open("results/hri_post/updated_weights_fixed_0.8.csv", "rb"))
+        updated_rand_weights = pickle.load(open("results/hri_post/updated_rand_weights_fixed_0.8.csv", "rb"))
 
         true_weights = [np.mean(np.array(true_weights[ui]), axis=0) for ui in range(len(true_weights))]
 
     # plot difference to weights
-    transfer_weights_diff, random_weights_diff = [], []
+    transfer_dist, random_dist = [], []
+    init_diff, prior_diff, online_diff, random_diff = [], [], [], []
     for ui, tw in enumerate(true_weights):
-        transfer_diff = updated_weights[ui] - tw
-        transfer_dist = np.linalg.norm(transfer_diff, axis=2)
-        transfer_weights_diff.append(np.mean(transfer_dist, axis=0))
+        t_diff = updated_weights[ui] - tw
+        t_dist = np.linalg.norm(t_diff, axis=2)
+        transfer_dist.append(np.mean(t_dist, axis=0))
+        prior_diff.append(np.mean(t_diff[:, 0, :], axis=0))
+        online_diff.append(np.mean(t_diff[:, -1, :], axis=0))
 
-        # random_diff = updated_rand_weights[ui] - tw
-        # random_dist = np.linalg.norm(random_diff, axis=2)
-        # random_weights_diff.append(np.mean(random_dist, axis=0))
+        r_diff = updated_rand_weights[ui] - tw
+        r_dist = np.linalg.norm(r_diff, axis=2)
+        random_dist.append(np.mean(r_dist, axis=0))
+        init_diff.append(np.mean(r_diff[:, 0, :], axis=0))
+        random_diff.append(np.mean(r_diff[:, -1, :], axis=0))
+
+    if sim:
+        true_diff = [0., 0., 0.]
+        init_diff = np.mean(init_diff, axis=0)
+        prior_diff = np.mean(prior_diff, axis=0)
+        online_diff = np.mean(online_diff, axis=0)
+        random_diff = np.mean(random_diff, axis=0)
+
+        fig = plt.figure()
+        ax = plt.axes(projection="3d")
+        ax.scatter3D(true_diff[0], true_diff[1], true_diff[2], c="black", marker="*", s=75)
+        ax.scatter3D(init_diff[0], init_diff[1], init_diff[2], c="red", s=75)
+        ax.scatter3D(prior_diff[0], prior_diff[1], prior_diff[2], c="blue", marker="h", s=75)
+        ax.scatter3D(online_diff[0], online_diff[1], online_diff[2], c="green", marker="^", s=75)
+        ax.scatter3D(random_diff[0], random_diff[1], random_diff[2], c="orange", marker="^", s=75)
+        plt.show()
 
     fig = plt.figure()
-    y1 = np.mean(transfer_weights_diff, axis=0)
-    # y2 = np.mean(random_weights_diff, axis=0)
+    y1 = np.mean(transfer_dist, axis=0)
+    y2 = np.mean(random_dist, axis=0)
     x = range(len(y1))
     plt.plot(x, y1, "g-")
-    # plt.plot(x, y2, "r--")
+    plt.plot(x, y2, "r--")
     # plt.ylim(0.35, 0.7)
     plt.xticks(fontsize=16)
     plt.yticks(fontsize=16)
     plt.xlabel("Steps", fontsize=16)
     plt.ylabel("Distance", fontsize=16)
-    # plt.legend(["online", "rand_online"], fontsize=16)
+    plt.legend(["online", "rand-online"], fontsize=16)
     plt.title("Distance between learned and actual weights", fontsize=16)
     plt.gcf().subplots_adjust(bottom=0.15)
     plt.gcf().subplots_adjust(left=0.15)

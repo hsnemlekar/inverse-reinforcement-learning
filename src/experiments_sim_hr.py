@@ -60,8 +60,8 @@ test_canonical = False
 test_complex = True
 
 # select samples
-n_train_samples = 1
-n_test_samples = 2
+n_train_samples = 10
+n_test_samples = 5
 
 # -------------------------------------------------- Load data ------------------------------------------------------ #
 
@@ -243,11 +243,11 @@ for ui, user_id in enumerate(users):
     # ---------------------------------------- Training: Learn weights ---------------------------------------------- #
 
     # select initial distribution of weights
-    # init = O.Uniform()
-    init = O.Constant(0.5)
+    init = O.Uniform()
+    # init = O.Constant(0.5)
 
     # choose our optimization strategy: exponentiated stochastic gradient descent with linear learning-rate decay
-    optim = O.ExpSga(lr=O.linear_decay(lr0=1.2))
+    optim = O.ExpSga(lr=O.linear_decay(lr0=0.8))
 
     transferred_weights, weights_train_update = [], []
 
@@ -395,8 +395,9 @@ for ui, user_id in enumerate(users):
     # -------------------------------- Training: Learn weights from complex demo ------------------------------------ #
 
     if test_complex:
-        init = O.Constant(0.5)
+        init = O.Uniform()  # Constant(0.5)
         complex_weights = []
+        # for init_weights, _ in learned_weights[ui]:
         for _ in range(n_train_samples):
             init_weights = init(n_shared_features)
             _, complex_weight = maxent_irl(X, shared_features, complex_trajectories, optim, init_weights)
@@ -404,7 +405,7 @@ for ui, user_id in enumerate(users):
 
         true_weights[ui] = complex_weights
 
-        pickle.dump(true_weights, open(save_path + "true_weights.csv", "wb"))
+        pickle.dump(true_weights, open(save_path + "true_weights_0.8.csv", "wb"))
 
     # ----------------------------------------- Testing: Random baselines ------------------------------------------- #
 
@@ -419,8 +420,8 @@ for ui, user_id in enumerate(users):
         # weight_idx = np.random.choice(range(len(weight_samples)), size=n_test_samples)
         # random_weights = weight_samples[weight_idx]
 
-        if exists(save_path + "learned_weights.csv"):
-            canonical_inits = pickle.load(open(save_path + "learned_weights.csv", "rb"))
+        if exists(save_path + "learned_weights_0.8.csv"):
+            canonical_inits = pickle.load(open(save_path + "learned_weights_0.8.csv", "rb"))
             random_priors = np.array(canonical_inits[ui])[:, 0, :]
         else:
             random_priors = []
@@ -480,17 +481,17 @@ if run_bayes:
     np.savetxt(save_path + "predict" + str(n_users) + "_norm_feat_bayes.csv", predict_scores)
 
 if run_maxent:
-    pickle.dump(learned_weights, open(save_path + "learned_weights.csv", "wb"))
-    pickle.dump(updated_weights, open(save_path + "updated_weights.csv", "wb"))
-    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online.csv", predict_scores)
-    pickle.dump(predicted_sequences, open(save_path + "sequence" + str(n_users) + "_maxent_new_online.csv", "wb"))
+    pickle.dump(learned_weights, open(save_path + "learned_weights_0.8.csv", "wb"))
+    pickle.dump(updated_weights, open(save_path + "updated_weights_0.8.csv", "wb"))
+    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_0.8.csv", predict_scores)
+    pickle.dump(predicted_sequences, open(save_path + "sequence" + str(n_users) + "_maxent_new_online_0.8.csv", "wb"))
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random1_scores)
 
 if run_random_weights:
-    pickle.dump(updated_rand_weights, open(save_path + "updated_rand_weights.csv", "wb"))
-    np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online.csv", random2_scores)
-    np.savetxt(save_path + "worst" + str(n_users) + "_online_rand_add.csv", worst_scores)
+    pickle.dump(updated_rand_weights, open(save_path + "updated_rand_weights_0.8.csv", "wb"))
+    np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online_0.8.csv", random2_scores)
+    np.savetxt(save_path + "worst" + str(n_users) + "_online_rand_add_0.8.csv", worst_scores)
 
 print("Done.")
