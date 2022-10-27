@@ -183,7 +183,7 @@ if plot_time:
 
 
 # ----------------------------------------------- Weights update ---------------------------------------------------- #
-
+plot_scatter = False
 if plot_weights:
     if sim:
         true_weights = np.loadtxt(data_path + "user_demos/weights.csv").astype(float)
@@ -191,22 +191,23 @@ if plot_weights:
         updated_weights = pickle.load(open("results/corl_sim/updated_weights.csv", "rb"))
         updated_rand_weights = pickle.load(open("results/corl_sim/updated_rand_weights.csv", "rb"))
 
-        # # plot weights for given user
-        # for ui in range(len(learned_weights)):
-        #     canonical_init = np.mean(np.array(learned_weights[ui])[:, 0], axis=0)
-        #     canonical_learned = np.mean(np.array(learned_weights[ui])[:, 1], axis=0)
-        #     step = -1
-        #     complex_learned = np.mean(np.array(updated_weights[ui])[:, step], axis=0)
-        #     random_learned = np.mean(np.array(updated_rand_weights[ui])[:, step], axis=0)
-        #
-        #     fig = plt.figure()
-        #     ax = plt.axes(projection="3d")
-        #     ax.scatter3D(true_weights[ui][0], true_weights[ui][1], true_weights[ui][2], c="black", marker="*", s=75)
-        #     ax.scatter3D(canonical_init[0], canonical_init[1], canonical_init[2], c="red", s=75)
-        #     ax.scatter3D(canonical_learned[0], canonical_learned[1], canonical_learned[2], c="blue", marker="h", s=75)
-        #     ax.scatter3D(complex_learned[0], complex_learned[1], complex_learned[2], c="green", marker="^", s=75)
-        #     ax.scatter3D(random_learned[0], random_learned[1], random_learned[2], c="orange", marker="^", s=75)
-        #     plt.show()
+        if plot_scatter:
+            # plot weights for given user
+            for ui in range(len(learned_weights)):
+                canonical_init = np.mean(np.array(learned_weights[ui])[:, 0], axis=0)
+                canonical_learned = np.mean(np.array(learned_weights[ui])[:, 1], axis=0)
+                step = -1
+                complex_learned = np.mean(np.array(updated_weights[ui])[:, step], axis=0)
+                random_learned = np.mean(np.array(updated_rand_weights[ui])[:, step], axis=0)
+
+                fig = plt.figure()
+                ax = plt.axes(projection="3d")
+                ax.scatter3D(true_weights[ui][0], true_weights[ui][1], true_weights[ui][2], c="black", marker="*", s=75)
+                ax.scatter3D(canonical_init[0], canonical_init[1], canonical_init[2], c="red", s=75)
+                ax.scatter3D(canonical_learned[0], canonical_learned[1], canonical_learned[2], c="blue", marker="h", s=75)
+                ax.scatter3D(complex_learned[0], complex_learned[1], complex_learned[2], c="green", marker="^", s=75)
+                ax.scatter3D(random_learned[0], random_learned[1], random_learned[2], c="orange", marker="^", s=75)
+                plt.show()
     else:
         true_weights = pickle.load(open("results/hri_post/true_weights_fixed_0.8.csv", "rb"))
         learned_weights = pickle.load(open("results/hri_post/learned_weights_fixed_0.8.csv", "rb"))
