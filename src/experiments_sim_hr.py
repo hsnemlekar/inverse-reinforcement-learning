@@ -45,10 +45,10 @@ def load_features(data, user_idx, feature_idx, action_idx):
 # -------------------------------------------------- Experiment ----------------------------------------------------- #
 
 # select algorithm
-run_maxent = True
+run_maxent = False
 run_bayes = False
 run_random_actions = False
-run_random_weights = False
+run_random_weights = True
 online_learning = True
 
 # algorithm parameters
@@ -57,7 +57,7 @@ custom_prob = False
 
 # debugging flags
 test_canonical = False
-test_complex = True
+test_complex = False
 
 # select samples
 n_train_samples = 10
