@@ -179,7 +179,8 @@ class CanonicalTask(AssemblyTask):
         tr_list = CanonicalTask.transition_list(s_from, a)
         if tr_list:
             if most_likely:
-                tr = max(tr_list, key=lambda p: p[0])
+                # tr = max(tr_list, key=lambda p: p[0])
+                 tr = tr_list[-1]
             else:
                 tr_idx = np.random.choice(range(len(tr_list)), p=[tr[0] for tr in tr_list])
                 tr = tr_list[tr_idx]
@@ -255,7 +256,8 @@ class ComplexTask(AssemblyTask):
         tr_list = ComplexTask.transition_list(s_from, a)
         if tr_list:
             if most_likely:
-                tr = max(tr_list, key=lambda p: p[0])
+                # tr = max(tr_list, key=lambda p: p[0])
+                tr = tr_list[-1]
             else:
                 tr_idx = np.random.choice(range(len(tr_list)), p=[tr[0] for tr in tr_list])
                 tr = tr_list[tr_idx]

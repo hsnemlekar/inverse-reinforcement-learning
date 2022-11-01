@@ -24,111 +24,112 @@ data_path = os.path.dirname(__file__) + "/data/"
 # get_qualtrics_survey(dir_save_survey=data_path, survey_id=execution_survey_id)
 
 # load user data
-demo_path = data_path + "Human-Robot Assembly - Execution.csv"
-df = pd.read_csv(demo_path)
+# demo_path = data_path + "Human-Robot Assembly - Execution.csv"
+# df = pd.read_csv(demo_path)
 
 # users to consider for evaluation
-users = [8, 9, 10, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
-user_idx = [df.index[df["Q0"] == str(user)][0] for user in users]
-reactive_first_users = [8, 9, 10, 14, 15, 16, 17, 18]
-proactive_first_users = [20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
-reactive_first_user_idx = [df.index[df["Q0"] == str(user)][0] for user in reactive_first_users]
-proactive_first_user_idx = [df.index[df["Q0"] == str(user)][0] for user in proactive_first_users]
-condition1_q = ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10", "Q11", "Q12", "Q13", "Q14", "Q15"]
-condition2_q = ["Q16", "Q17", "Q18", "Q19", "Q20", "Q21", "Q22", "Q23", "Q24", "Q25", "Q26", "Q27", "Q28", "Q29", "Q30"]
-plot_q = []
-# plot_q = [[0, 1], [2, 3, 4, 5], [6, 7], [8, 9, 12], [10, 11]]
+# users = [8, 9, 10, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+# user_idx = [df.index[df["Q0"] == str(user)][0] for user in users]
+# reactive_first_users = [8, 9, 10, 14, 15, 16, 17, 18]
+# proactive_first_users = [20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+# reactive_first_user_idx = [df.index[df["Q0"] == str(user)][0] for user in reactive_first_users]
+# proactive_first_user_idx = [df.index[df["Q0"] == str(user)][0] for user in proactive_first_users]
+# condition1_q = ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10", "Q11", "Q12", "Q13", "Q14", "Q15"]
+# condition2_q = ["Q16", "Q17", "Q18", "Q19", "Q20", "Q21", "Q22", "Q23", "Q24", "Q25", "Q26", "Q27", "Q28", "Q29", "Q30"]
+# plot_q = []
+# # plot_q = [[0, 1], [2, 3, 4, 5], [6, 7], [8, 9, 12], [10, 11]]
 
-hxs, hys = [], []
-for i, q_idx in enumerate(plot_q):
-    X, Y, Z = [], [], []
-    hx, hy = np.empty((18, 0)), np.empty((18, 0))
-    for q_id in q_idx:
-        c1q = condition1_q[q_id]
-        c2q = condition2_q[q_id]
+# hxs, hys = [], []
+# for i, q_idx in enumerate(plot_q):
+#     X, Y, Z = [], [], []
+#     hx, hy = np.empty((18, 0)), np.empty((18, 0))
+#     for q_id in q_idx:
+#         c1q = condition1_q[q_id]
+#         c2q = condition2_q[q_id]
 
-        x1 = df[c1q].iloc[reactive_first_user_idx]
-        x2 = df[c2q].iloc[proactive_first_user_idx]
+#         x1 = df[c1q].iloc[reactive_first_user_idx]
+#         x2 = df[c2q].iloc[proactive_first_user_idx]
 
-        y1 = df[c2q].iloc[reactive_first_user_idx]
-        y2 = df[c1q].iloc[proactive_first_user_idx]
+#         y1 = df[c2q].iloc[reactive_first_user_idx]
+#         y2 = df[c1q].iloc[proactive_first_user_idx]
 
-        x = np.concatenate([x1.to_numpy(dtype=float), x2.to_numpy(dtype=float)])
-        y = np.concatenate([y1.to_numpy(dtype=float), y2.to_numpy(dtype=float)])
+#         x = np.concatenate([x1.to_numpy(dtype=float), x2.to_numpy(dtype=float)])
+#         y = np.concatenate([y1.to_numpy(dtype=float), y2.to_numpy(dtype=float)])
 
-        # if c1q in ["Q3", "Q5", "Q10"]:
-        #     x = (7 - x) + 1
-        #     y = (7 - y) + 1
+#         # if c1q in ["Q3", "Q5", "Q10"]:
+#         #     x = (7 - x) + 1
+#         #     y = (7 - y) + 1
 
-        if c1q == "Q13":
-            c1q = "Q11"
+#         if c1q == "Q13":
+#             c1q = "Q11"
 
-        # if c1q == "Q12":
-        #     c1q = "Q13"
-        #
-        # if c1q == "Q11":
-        #     c1q = "Q12"
+#         # if c1q == "Q12":
+#         #     c1q = "Q13"
+#         #
+#         # if c1q == "Q11":
+#         #     c1q = "Q12"
 
-        if print_subjective:
-            print(round(np.median(x), 3), round(np.median(y), 3))
-            print("Wilcoxon:", stats.wilcoxon(x, y))
-            # print(" T-test :", stats.ttest_rel(x, y))
+#         if print_subjective:
+#             print(round(np.median(x), 3), round(np.median(y), 3))
+#             print("Wilcoxon:", stats.wilcoxon(x, y))
+#             # print(" T-test :", stats.ttest_rel(x, y))
 
-        X = X + (["reactive"] * len(x) + ["proactive"] * len(y))
-        Y = Y + list(x) + list(y)
-        Z = Z + [c1q] * (len(x)+len(y))
+#         X = X + (["reactive"] * len(x) + ["proactive"] * len(y))
+#         Y = Y + list(x) + list(y)
+#         Z = Z + [c1q] * (len(x)+len(y))
 
-        hx = np.hstack([hx, np.reshape(x, (len(x), 1))])
-        hy = np.hstack([hy, np.reshape(y, (len(y), 1))])
+#         hx = np.hstack([hx, np.reshape(x, (len(x), 1))])
+#         hy = np.hstack([hy, np.reshape(y, (len(y), 1))])
 
-    # scale
-    print("Cronbach", pg.cronbach_alpha(pd.DataFrame(np.vstack([hx, hy]))))
-    print(round(np.mean(np.sum(hx, axis=1)), 3), round(stats.sem(np.sum(hx, axis=1)), 3),
-          round(np.mean(np.sum(hy, axis=1)), 3), round(stats.sem(np.sum(hy, axis=1)), 3))
-    print("Pearson :", stats.pearsonr(np.sum(hx, axis=1), np.sum(hy, axis=1)))
-    print(" T-test :", stats.ttest_rel(np.sum(hx, axis=1), np.sum(hy, axis=1)))
+#     # scale
+#     print("Cronbach", pg.cronbach_alpha(pd.DataFrame(np.vstack([hx, hy]))))
+#     print(round(np.mean(np.sum(hx, axis=1)), 3), round(stats.sem(np.sum(hx, axis=1)), 3),
+#           round(np.mean(np.sum(hy, axis=1)), 3), round(stats.sem(np.sum(hy, axis=1)), 3))
+#     print("Pearson :", stats.pearsonr(np.sum(hx, axis=1), np.sum(hy, axis=1)))
+#     print(" T-test :", stats.ttest_rel(np.sum(hx, axis=1), np.sum(hy, axis=1)))
 
-    hxs.append(np.sum(hx, axis=1))
-    hys.append(np.sum(hy, axis=1))
+#     hxs.append(np.sum(hx, axis=1))
+#     hys.append(np.sum(hy, axis=1))
 
-    if plot_subjective:
-        plt.figure(figsize=(2.5*len(q_idx), 5))
-        g = sns.barplot(x=Z, y=Y, hue=X, ci=68, errwidth=2, capsize=.1, palette=["b", "g"])
-        plt.ylim(1, 7)
-        plt.xticks(fontsize=20)
-        plt.yticks(fontsize=20)
-        plt.ylabel("User ratings", fontsize=22)
-        # plt.legend([], [], frameon=False)
-        plt.legend(fontsize=20, ncol=2, loc=1)
-        plt.gcf().subplots_adjust(left=0.175)
-        # plt.savefig("figures/corl/intelligence.png", bbox_inches='tight')
-        plt.show()
+#     if plot_subjective:
+#         plt.figure(figsize=(2.5*len(q_idx), 5))
+#         g = sns.barplot(x=Z, y=Y, hue=X, ci=68, errwidth=2, capsize=.1, palette=["b", "g"])
+#         plt.ylim(1, 7)
+#         plt.xticks(fontsize=20)
+#         plt.yticks(fontsize=20)
+#         plt.ylabel("User ratings", fontsize=22)
+#         # plt.legend([], [], frameon=False)
+#         plt.legend(fontsize=20, ncol=2, loc=1)
+#         plt.gcf().subplots_adjust(left=0.175)
+#         # plt.savefig("figures/corl/intelligence.png", bbox_inches='tight')
+#         plt.show()
 
 
 # --------------------------------------------- Load accuracy data -------------------------------------------------- #
 
-dir_path = os.path.dirname(__file__)
+dir_path = os.path.abspath(os.path.dirname(__file__))
+print(dir_path)
 if sim:
-    file_path = dir_path + "/results/corl_sim/"
-    prior1_scores = np.loadtxt(file_path + "predict20_maxent_uni.csv")
-    predict1_scores = np.loadtxt(file_path + "predict20_maxent_new_online.csv")
-    random1_scores = np.loadtxt(file_path + "random20_weights_new_online.csv")
+    file_path = dir_path + "/results/stochastic/"
+    prior1_scores = np.loadtxt(file_path + "predict20_maxent_uni_stochastic.csv")
+    predict1_scores = np.loadtxt(file_path + "predict20_maxent_new_online_stochastic.csv")
+    random1_scores = np.loadtxt(file_path + "random20_weights_new_online_stochastic.csv")
 
-    prior2_scores = np.loadtxt(file_path + "predict20_maxent_uni_stochastic.csv")
-    predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_stochastic.csv")
-    random2_scores = np.loadtxt(file_path + "random20_weights_new_online_stochastic.csv")
+    prior2_scores = np.loadtxt(file_path + "predict20_maxent_uni_stochastic_p0.7.csv")
+    predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_stochastic_p0.7.csv")
+    random2_scores = np.loadtxt(file_path + "random20_weights_new_online_stochastic_p0.7.csv")
 
-    prior3_scores = np.loadtxt(file_path + "predict20_maxent_uni_noisy2.csv")
-    predict3_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy2.csv")
-    random3_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy2.csv")
+    prior3_scores = np.loadtxt(file_path + "predict20_maxent_uni_stochastic_p0.5.csv")
+    predict3_scores = np.loadtxt(file_path + "predict20_maxent_new_online_stochastic.csv")
+    random3_scores = np.loadtxt(file_path + "random20_weights_new_online_stochastic_p0.5.csv")
 
-    prior4_scores = np.loadtxt(file_path + "predict20_maxent_uni_noisy3.csv")
-    predict4_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy3.csv")
-    random4_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy3.csv")
+    # prior4_scores = np.loadtxt(file_path + "predict20_maxent_uni_noisy3.csv")
+    # predict4_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy3.csv")
+    # random4_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy3.csv")
 
-    prior5_scores = np.loadtxt(file_path + "predict20_maxent_uni_noisy4.csv")
-    predict5_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy4.csv")
-    random5_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy4.csv")
+    # prior5_scores = np.loadtxt(file_path + "predict20_maxent_uni_noisy4.csv")
+    # predict5_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy4.csv")
+    # random5_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy4.csv")
 else:
     file_path = dir_path + "/results/corl/"
     predict1_scores = np.loadtxt(file_path + "predict17_maxent_new_online_add.csv")
@@ -192,18 +193,18 @@ random1_users = list(np.sum(random1_scores, axis=1)/n_steps)
 random2_users = list(np.sum(random2_scores, axis=1)/n_steps)
 if sim:
     predict3_users = list(np.sum(predict3_scores, axis=1) / n_steps)
-    predict4_users = list(np.sum(predict4_scores, axis=1) / n_steps)
-    predict5_users = list(np.sum(predict5_scores, axis=1) / n_steps)
+    # predict4_users = list(np.sum(predict4_scores, axis=1) / n_steps)
+    # predict5_users = list(np.sum(predict5_scores, axis=1) / n_steps)
 
     random3_users = list(np.sum(random3_scores, axis=1) / n_steps)
-    random4_users = list(np.sum(random4_scores, axis=1) / n_steps)
-    random5_users = list(np.sum(random5_scores, axis=1) / n_steps)
+    # random4_users = list(np.sum(random4_scores, axis=1) / n_steps)
+    # random5_users = list(np.sum(random5_scores, axis=1) / n_steps)
 
     prior1_users = list(np.sum(prior1_scores, axis=1) / n_steps)
     prior2_users = list(np.sum(prior2_scores, axis=1) / n_steps)
     prior3_users = list(np.sum(prior3_scores, axis=1) / n_steps)
-    prior4_users = list(np.sum(prior4_scores, axis=1) / n_steps)
-    prior5_users = list(np.sum(prior5_scores, axis=1) / n_steps)
+    # prior4_users = list(np.sum(prior4_scores, axis=1) / n_steps)
+    # prior5_users = list(np.sum(prior5_scores, axis=1) / n_steps)
 
 print("predict 1:", predict1_users)
 print("predict 2:", predict2_users)
@@ -240,13 +241,16 @@ cp = sns.color_palette()
 if plot_bar:
     if sim:
         plt.figure(figsize=(8, 5))
-        X = ["deterministic"]*3*n_users + \
-            ["stochastic"]*3*n_users
+        X = ["Probability 0.9"]*3*n_users + \
+            ["Probability 0.7"]*3*n_users + \
+            ["Probability 0.5"]*3*n_users 
         Y = list(prior1_users) + list(random1_users) + list(predict1_users) + \
-            list(prior2_users) + list(random2_users) + list(predict2_users)
+            list(prior2_users) + list(random2_users) + list(predict2_users) + \
+            list(prior3_users) + list(random3_users) + list(predict3_users)
         Z = ["prior"]*n_users + ["rand-online"]*n_users + ["online"]*n_users + \
+            ["prior"]*n_users + ["rand-online"]*n_users + ["online"]*n_users + \
             ["prior"]*n_users + ["rand-online"]*n_users + ["online"]*n_users
-        sns.barplot(x=X, y=Y, hue=Z, ci=68, errwidth=2, capsize=.1)
+        sns.barplot(x=X, y=Y, hue=Z, errorbar=('ci',68), errwidth=2, capsize=.1)
         plt.ylim(0.45, 0.85)
         plt.xticks(fontsize=18)
         plt.yticks(fontsize=16)
@@ -260,7 +264,7 @@ if plot_bar:
         plt.figure(figsize=(9, 5))
         X = ["prior"] * n_users + ["online"] * n_users + ["rand-add"] * n_users + ["online-add"] * n_users
         Y = list(random2_users) + list(predict2_users) + list(random1_users) + list(predict1_users)
-        sns.barplot(x=X, y=Y, ci=68, errwidth=2, capsize=.1, palette=["b", "g", cp[1], "r"])
+        sns.barplot(x=X, y=Y, errorbar=('ci',68), errwidth=2, capsize=.1, palette=["b", "g", cp[1], "r"])
         # sns.boxplot(x=X, y=Y)  # ci=68, errwidth=2, capsize=.1)
         # plt.ylim(0., 1.0)
         plt.xticks(fontsize=18)

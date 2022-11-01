@@ -82,10 +82,10 @@ weights_adverse = [[0.60, 0.20, 0.20, 0.60],
 # -------------------------------------------------- Experiment ----------------------------------------------------- #
 
 # select algorithm
-run_maxent = False
+run_maxent = True
 run_bayes = False
 run_random_actions = False
-run_random_weights = True
+run_random_weights = False
 online_learning = True
 
 # algorithm parameters
@@ -403,10 +403,9 @@ for ui in range(len(canonical_demos)):
                                                                                    consider_options=False)
                     random_score.append(r_score)
             else:
-                qf_random, _, _ = value_iteration(X.states, X.actions, X.transition, random_rewards, X.terminal_idx)
-                r_score, predict_sequence, _ = predict_trajectory(qf_random, X.states,
+                qf_random, _, _ = value_iteration(X.states, X.actions, X.transition_list, random_rewards, X.terminal_idx)
+                r_score, predict_sequence, _ = predict_trajectory(X, qf_random,
                                                                   complex_user_demo,
-                                                                  X.transition,
                                                                   sensitivity=0.0,
                                                                   consider_options=False)
                 random_score.append(r_score)
@@ -416,7 +415,7 @@ for ui in range(len(canonical_demos)):
 
 # -------------------------------------------------- Save results --------------------------------------------------- #
 
-save_path = "results/corl_sim/"
+save_path = "results/stochastic/"
 
 if run_bayes:
     np.savetxt(save_path + "weights" + str(n_users) + "_norm_feat_bayes_ent.csv", weights)
@@ -424,12 +423,12 @@ if run_bayes:
 
 if run_maxent:
     # np.savetxt(save_path + "weights" + str(n_users) + "_maxent_uni.csv", weights)
-    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_stochastic.csv", predict_scores)
+    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_stochastic_p0.5.csv", predict_scores)
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random_scores)
 
 if run_random_weights:
-    np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online_stochastic.csv", random_scores)
+    np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online_stochastic_p0.7.csv", random_scores)
 
 print("Done.")
