@@ -52,20 +52,22 @@ follow_up = False
 
 # select algorithm
 run_maxent = True
+run_bayes = False
 run_random_actions = False
 run_random_weights = False
 online_learning = True
 
 # algorithm parameters
 map_estimate = True
+custom_prob = False
 
 # debugging flags
 test_canonical = False
 test_complex = False
 
 # select samples
-n_train_samples = 25
-n_test_samples = 4
+n_train_samples = 5
+n_test_samples = 1
 
 # -------------------------------------------------- Load data ------------------------------------------------------ #
 
@@ -136,11 +138,11 @@ for ui, user_id in enumerate(users):
     # canonical_feature_values = load_features(df, idx, canonical_q, [1, 3, 5, 2, 4, 6])
 
     # user ratings for actual task features
+    _, n_shared_feature_values = np.shape(canonical_feature_values)
     complex_feature_values = load_features(df, idx, complex_q, [3, 8, 15, 16, 4, 9, 10, 11])
     # complex_feature_values = load_features(df, idx, complex_q, [1, 3, 7, 8, 2, 4, 5, 6])
 
     # actual task features shared with canonical task
-    _, n_shared_feature_values = np.shape(canonical_feature_values)
     shared_feature_values = [val[:n_shared_feature_values] for val in complex_feature_values]
 
     # load canonical task demonstration
@@ -153,18 +155,12 @@ for ui, user_id in enumerate(users):
     else:
         canonical_demo = [a for _, a in sorted(zip(preferred_order, canonical_survey_actions))]
 
-    # load complex task demonstration
-    complex_survey_actions = [0, 4, 4, 2, 2, 4, 4, 2, 2, 1, 5, 3, 6, 6, 7, 6, 6]
-    complex_survey_qs = ['Q15_1', 'Q15_2', 'Q15_9', 'Q15_7', 'Q15_12', 'Q15_10', 'Q15_11', 'Q15_13', 'Q15_14',
-                         'Q15_3', 'Q15_4', 'Q15_8', 'Q15_5', 'Q15_15', 'Q15_6', 'Q15_16', 'Q15_17']
-    preferred_order = [int(df[q][idx]) for q in complex_survey_qs]
-    complex_demo = []
-    for _, a in sorted(zip(preferred_order, complex_survey_actions)):
-        # action_counts = [1, 1, 4, 1, 4, 1, 4, 1]
-        complex_demo += [a]  # * action_counts[a]
-
     # initialize canonical task
     C = CanonicalTask(canonical_feature_values, canonical_demo)
+    # C.set_end_state(canonical_demo)
+    # C.enumerate_states()
+    # C.set_terminal_idx()
+    # C.set_transition_matrix()
 
     # compute features values for each state
     canonical_features = np.array([C.get_features(state) for state in C.states])
@@ -176,11 +172,39 @@ for ui, user_id in enumerate(users):
     canonical_trajectories = get_trajectories(C.states, canonical_user_demo, C.transition)
     print("Canonical demo:", canonical_user_demo)
 
+    # precompute trajectories for bayesian inference
+    if run_bayes:
+        if exists("data/hr_demos/canonical_trajectories.csv"):
+            all_canonical_trajectories = pickle.load(open("data/hr_demos/canonical_trajectories.csv", "rb"))
+        else:
+            all_canonical_trajectories = C.enumerate_trajectories([canonical_demo])
+            pickle.dump(all_canonical_trajectories, open("data/hr_demos/canonical_trajectories.csv", "wb"))
+    else:
+        all_canonical_trajectories = []
+
+    # load complex task demonstration
+    complex_survey_actions = [0, 4, 4, 2, 2, 4, 4, 2, 2, 1, 5, 3, 6, 6, 7, 6, 6]
+    complex_survey_qs = ['Q15_1', 'Q15_2', 'Q15_9', 'Q15_7', 'Q15_12', 'Q15_10', 'Q15_11', 'Q15_13', 'Q15_14',
+                         'Q15_3', 'Q15_4', 'Q15_8', 'Q15_5', 'Q15_15', 'Q15_6', 'Q15_16', 'Q15_17']
+    preferred_order = [int(df[q][idx]) for q in complex_survey_qs]
+    complex_demo = []
+    for _, a in sorted(zip(preferred_order, complex_survey_actions)):
+        # action_counts = [1, 1, 4, 1, 4, 1, 4, 1]
+        complex_demo += [a]  # * action_counts[a]
+
     # initialize an actual task with shared features
     X = ComplexTask(shared_feature_values, complex_survey_actions)
+    # X.set_end_state(complex_survey_actions)
+    # X.enumerate_states()
+    # X.set_terminal_idx()
+    # X.set_transition_matrix()
 
     # initialize an actual task with the full set of features
     X_add = ComplexTask(complex_feature_values, complex_survey_actions)
+    # X_add.set_end_state(complex_survey_actions)
+    # X_add.enumerate_states()
+    # X_add.set_terminal_idx()
+    # X_add.set_transition_matrix()
 
     # compute feature values for each state in actual task with shared features
     shared_features = np.array([X.get_features(state) for state in X.states])
@@ -195,35 +219,119 @@ for ui, user_id in enumerate(users):
     complex_trajectories = get_trajectories(X.states, complex_user_demo, X.transition)
     print("Complex demo:", complex_user_demo)
 
+    if run_bayes:
+        if exists("data/pilot_demos/complex_trajectories.csv"):
+            all_complex_trajectories = pickle.load(open("data/pilot_demos/complex_trajectories.csv", "rb"))
+        else:
+            all_complex_trajectories = X.enumerate_trajectories([complex_demo])
+            pickle.dump(all_complex_trajectories, open("data/pilot_demos/complex_trajectories.csv", "wb"))
+    else:
+        all_complex_trajectories = []
+
+    # --------------------------------------------------------------------------------------------------------------- #
+
+    # pre-compute likelihood of each trajectory for bayesian inference
+    complex_likelihoods = []
+
+    # if custom_prob:
+    #     if exists("data/pilot_demos/custom_likelihoods.csv") and custom_prob:
+    #         complex_likelihoods = np.loadtxt("data/pilot_demos/custom_likelihoods.csv")
+    #         complex_qf = np.loadtxt("data/pilot_demos/complex_q_values.csv")
+    #     else:
+    #         complex_qf = []
+    #         for complex_weights in weight_samples:
+    #             save_path = "data/pilot_demos/custom_likelihoods.csv"
+    #             r = complex_features.dot(complex_weights)
+    #             qf, _, _ = value_iteration(X.states, X.actions, X.transition, r, X.terminal_idx)
+    #             likelihood = custom_likelihood(X, all_complex_trajectories, qf)
+    #             complex_likelihoods.append(likelihood)
+    #             complex_qf.append(qf)
+    #         np.savetxt("data/pilot_demos/custom_likelihoods.csv", complex_likelihoods)
+    #         np.savetxt("data/pilot_demos/complex_q_values.csv", complex_qf)
+    # else:
+    #     if exists("data/pilot_demos/complex_likelihoods.csv"):
+    #         complex_likelihoods = np.loadtxt("data/user_demos/complex_likelihoods.csv")
+    #     else:
+    #         for complex_weights in weight_samples:
+    #             likelihood, _ = boltzman_likelihood(complex_features, all_complex_trajectories, complex_weights)
+    #             complex_likelihoods.append(likelihood)
+    #         np.savetxt("data/pilot_demos/complex_likelihoods.csv", complex_likelihoods)
+
     # ---------------------------------------- Training: Learn weights ---------------------------------------------- #
 
     # select initial distribution of weights
     init = O.Uniform()
 
     # choose our optimization strategy: exponentiated stochastic gradient descent with linear learning-rate decay
-    optim = O.ExpSga(lr=O.linear_decay(lr0=0.6))
+    optim = O.ExpSga(lr=O.linear_decay(lr0=0.8))
 
-    if run_maxent and not online_learning:
+    transferred_weights, weights_train_update = [], []
+
+    if run_maxent:
         print("Training using Max-Entropy IRL ...")
+        canonical_weights = []
+        for _ in range(n_train_samples):
+            canonical_update = []
+            init_weights = init(n_shared_features)
+            canonical_update.append(deepcopy(init_weights))
+            _, canonical_weight = maxent_irl(C, canonical_features, canonical_trajectories, optim, init_weights)
+            transferred_weights.append(canonical_weight)
+            canonical_update.append(canonical_weight)
+            weights_train_update.append(canonical_update)
 
-        init_weights = [init(n_shared_features) for _ in range(n_train_samples)]
+        learned_weights[ui] = weights_train_update
 
-        transferred_weights = []
-        for iw in init_weights:
-            _, canonical_w = maxent_irl(C, canonical_features, canonical_trajectories, deepcopy(optim), deepcopy(iw))
-            transferred_weights.append(canonical_w)
+    elif run_bayes:
+        print("Training using Bayesian IRL ...")
 
-        learned_weights[ui] = [[init_weights[idx], transferred_weights[idx]] for idx in range(n_train_samples)]
+        # sample candidate weights
+        if exists("data/hr_demos/weight_samples.csv"):
+            weight_samples = np.loadtxt("data/hr_demos/weight_samples.csv")
+        else:
+            weight_samples = np.random.uniform(0., 1., (n_train_samples, n_shared_features))
+            d = 1.  # np.sum(u, axis=1)  # np.sum(u ** 2, axis=1) ** 0.5
+            weight_samples = weight_samples / d
 
-    elif exists(save_path + "learned_weights_0.6.csv"):
-        learned_weights = pickle.load(open(save_path + "learned_weights_0.6.csv", "rb"))
-        transferred_weights = np.array(learned_weights[ui])[:, 1, :]
+        posteriors, entropies = [], []
+        weight_priors = np.ones(len(weight_samples)) / len(weight_samples)
+        for n_sample in range(len(weight_samples)):
+            sample = weight_samples[n_sample]
+            if custom_prob:
+                r = canonical_features.dot(sample)
+                qf, _, _ = value_iteration(C.states, C.actions, C.trans_mat, r, C.terminal_idx)
+                likelihood_all_traj = custom_likelihood(C, all_canonical_trajectories, qf)
+                likelihood_user_demo = custom_likelihood(C, canonical_trajectories, qf)
+            else:
+                likelihood_all_traj, _ = boltzman_likelihood(canonical_features, all_canonical_trajectories, sample)
+                likelihood_user_demo, _ = boltzman_likelihood(canonical_features, canonical_trajectories, sample)
+
+            likelihood_user_demo = likelihood_user_demo / np.sum(likelihood_all_traj)
+            bayesian_update = likelihood_user_demo * weight_priors[n_sample]
+
+            # p = likelihood_all_trajectories / np.sum(likelihood_all_trajectories)
+            # entropy = np.sum(p*np.log(p))
+
+            posteriors.append(np.prod(bayesian_update))
+            entropies.append(np.sum(np.log(likelihood_user_demo)))
+
+        posteriors = list(posteriors / np.sum(posteriors))
+
+        # select the MAP (maximum a posteriori) weight estimate
+        max_posterior = max(posteriors)
+        transferred_weights = weight_samples[posteriors.index(max_posterior)]
+        # max_entropy = max(entropies)
+        # canonical_weights = weight_samples[entropies.index(max_entropy)]
+        # all_max_posteriors = [idx for idx, p in enumerate(posteriors) if p == max_posterior]
+        # all_max_entropies = [e for idx, e in enumerate(entropies) if idx in all_max_posteriors]
+        # max_entropy = max(all_max_entropies)
+        # canonical_weights = weight_samples[all_max_posteriors[all_max_entropies.index(max_entropy)]]
+        print("Weights have been learned for the canonical task! Hopefully.")
 
     else:
         print("Did not learn any weights :(")
         transferred_weights = None
 
-    print("Weights -", transferred_weights[0])
+    print("Weights -", transferred_weights)
 
     # --------------------------------------- Verifying: Reproduce demo --------------------------------------------- #
 
@@ -240,17 +348,46 @@ for ui, user_id in enumerate(users):
 
     # ----------------------------------------- Testing: Predict complex -------------------------------------------- #
 
-    if run_maxent:
+    if run_bayes or run_maxent:
         print("Testing ...")
+
+        if run_bayes:
+            weight_idx = np.random.choice(range(len(weight_samples)), size=n_test_samples, p=posteriors)
+            transferred_weights = weight_samples[weight_idx]
 
         # score for predicting user action at each time step
         predict_score, p_sequences, weights_test_update, running_acc = [], [], [], []
 
         # st = time.time()
         #
+        # processes = []
+        # for transferred_weight in transferred_weights:
+        #     init_weights = init(n_shared_features)
+        #     # transfer rewards over shared features
+        #     transfer_rewards_abstract = shared_features.dot(transferred_weight)
+        #
+        #     # compute policy for transferred rewards
+        #     qf_transfer, _, _ = value_iteration(X.states, X.actions, X.trans_mat, transfer_rewards_abstract,
+        #                                         X.terminal_idx)
+        #     processes.append(
+        #         Thread(target=online_predict_trajectory, args=(X, complex_user_demo,
+        #                                                        transferred_weight,
+        #                                                        shared_features,
+        #                                                        complex_features,
+        #                                                        [],
+        #                                                        optim, init,
+        #                                                        user_id)))
+        # for process in processes:
+        #     process.start()
+        #
+        # for process in processes:
+        #     process.join()
+        #
         # print("Evaluated all weights in", time.time() - st, "secs.")
         # print("===================================================")
         # input("Press enter to continue.")
+
+        st = time.time()
 
         for transferred_weight in transferred_weights:
 
@@ -290,6 +427,10 @@ for ui, user_id in enumerate(users):
                 predict_score.append(p_score)
                 p_sequences.append(str(p_sequence))
 
+        print("Evaluated all weights in", time.time() - st, "secs.")
+        print("===================================================")
+        input("Press enter to continue.")
+
         predict_score = np.mean(predict_score, axis=0)
         predict_scores.append(predict_score)
         predict_sequence = json.loads(max(set(p_sequences), key=p_sequences.count))
@@ -307,10 +448,13 @@ for ui, user_id in enumerate(users):
     # -------------------------------- Training: Learn weights from complex demo ------------------------------------ #
 
     if test_complex:
+        init = O.Uniform()  # Constant(0.5)
         complex_weights = []
-        for iw, _ in learned_weights[ui]:
-            _, complex_w = maxent_irl(X, shared_features, complex_trajectories, deepcopy(optim), deepcopy(iw))
-            complex_weights.append(complex_w)
+        # for init_weights, _ in learned_weights[ui]:
+        for _ in range(n_train_samples):
+            init_weights = init(n_shared_features)
+            _, complex_weight = maxent_irl(X, shared_features, complex_trajectories, optim, init_weights)
+            complex_weights.append(complex_weight)
 
         true_weights[ui] = complex_weights
 
@@ -385,11 +529,15 @@ for ui, user_id in enumerate(users):
 
 # -------------------------------------------------- Save results --------------------------------------------------- #
 
+if run_bayes:
+    # np.savetxt(save_path + "weights" + str(n_users) + "_norm_feat_bayes.csv", weights)
+    np.savetxt(save_path + "predict" + str(n_users) + "_norm_feat_bayes.csv", predict_scores)
+
 if run_maxent:
-    # pickle.dump(learned_weights, open(save_path + "learned_weights_0.6.csv", "wb"))
-    pickle.dump(updated_weights, open(save_path + "updated_weights_0.6.csv", "wb"))
-    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_0.6.csv", predict_scores)
-    pickle.dump(predicted_sequences, open(save_path + "sequence" + str(n_users) + "_maxent_new_online_0.6.csv", "wb"))
+    # pickle.dump(learned_weights, open(save_path + "learned_weights_online_0.6.csv", "wb"))
+    # pickle.dump(updated_weights, open(save_path + "updated_weights_0.6.csv", "wb"))
+    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_0.8.csv", predict_scores)
+    pickle.dump(predicted_sequences, open(save_path + "sequence" + str(n_users) + "_maxent_new_0.8.csv", "wb"))
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random1_scores)

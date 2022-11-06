@@ -1,4 +1,5 @@
 import numpy as np
+from numba import njit
 
 
 def value_iteration(states, actions, transition, rewards, terminal_states, delta=1e-3):
@@ -15,6 +16,7 @@ def value_iteration(states, actions, transition, rewards, terminal_states, delta
     Returns: q-value for each state-action pair, value for each state, optimal actions in each state
 
     """
+
     vf = {s: 0 for s in range(len(states))}  # values
     op_actions = {s: 0 for s in range(len(states))}  # optimal actions
 
@@ -34,7 +36,7 @@ def value_iteration(states, actions, transition, rewards, terminal_states, delta
                 continue
 
             for k_action in actions:
-                prob_ns, ns = transition(states[j_state], k_action)
+                prob_ns, ns = transition[j_state][k_action]
                 qf[j_state][k_action] = rewards[j_state]
                 if ns:
                     int_ns = states.index(ns)
@@ -62,7 +64,7 @@ def value_iteration(states, actions, transition, rewards, terminal_states, delta
         change = np.linalg.norm((np_v - np_v_temp))
         vf = vf_temp
         if change < delta:
-            # print("VI converged after %d iterations" % (i))
+            # print("VI converged after %d iterations" % i)
             break
 
     if change >= delta:

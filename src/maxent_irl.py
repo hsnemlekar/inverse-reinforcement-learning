@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from vi import value_iteration
 from copy import deepcopy
@@ -88,13 +89,14 @@ def compute_expected_svf(task, p_initial, reward, max_iters, eps=1e-5):
     return d.sum(axis=1)
 
 
-def compute_expected_svf_using_rollouts(task, reward, max_iters):
+def compute_expected_svf_using_rollouts(task, reward, max_iters=10):
     states, actions, terminal = task.states, task.actions, task.terminal_idx
     n_states, n_actions = len(states), len(actions)
 
-    qf, vf, _ = value_iteration(states, actions, task.transition, reward, terminal)
+    qf, vf, _ = value_iteration(states, actions, task.trans_mat, reward, terminal)
     svf = np.zeros(n_states)
-    for _ in range(n_states):
+
+    for _ in range(max_iters):
         s_idx = 0
         svf[s_idx] += 1
         while s_idx not in task.terminal_idx:
@@ -117,7 +119,7 @@ def compute_expected_svf_using_rollouts(task, reward, max_iters):
             s_idx = states.index(sp)
             svf[s_idx] += 1
 
-    e_svf = svf/n_states
+    e_svf = svf/max_iters
 
     return e_svf
 
@@ -333,7 +335,7 @@ def online_predict_trajectory(task, demos, weights, features, add_features, pref
 
     # priors = np.ones(len(samples)) / len(samples)
     rewards = features.dot(weights)
-    qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx, delta=1e-3)
+    qf, _, _ = value_iteration(task.states, task.actions, task.trans_mat, rewards, task.terminal_idx, delta=1e-3)
 
     # maintain running avg
     running_acc = []
@@ -394,7 +396,7 @@ def online_predict_trajectory(task, demos, weights, features, add_features, pref
             # c = dp / (qf[s][predict_action] - qf[s][take_action])
 
             print("Step:", step, "Score:", np.mean(score), "dp:", dp, "dq:", qf[s][predict_action] - qf[s][take_action])
-            if dp > 3:
+            if dp > 6:
 
                 if "part" in pref:
                     pref.remove("part")
@@ -461,7 +463,7 @@ def online_predict_trajectory(task, demos, weights, features, add_features, pref
 
             # compute policy for current estimate of weights
             rewards = features.dot(weights)
-            qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx,
+            qf, _, _ = value_iteration(task.states, task.actions, task.trans_mat, rewards, task.terminal_idx,
                                        delta=1e-3)
 
         #     p_score, _, _ = predict_trajectory(qf, task.states, demos, task.transition, sensitivity=0.0,

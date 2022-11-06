@@ -4,7 +4,7 @@ from copy import deepcopy
 
 class AssemblyTask:
 
-    def __init__(self, features):
+    def __init__(self, features, demo):
 
         self.num_actions, self.num_features = np.shape(features)
         self.actions = np.array(range(self.num_actions))
@@ -14,10 +14,11 @@ class AssemblyTask:
 
         # start state of the assembly task (none of the actions have been performed)
         self.s_start = [0] * self.num_actions + [-1, -1]
-        self.s_end = []
+        self.s_end = self.set_end_state(demo)
 
-        self.states = [self.s_start]
-        self.terminal_idx = []
+        self.states = self.enumerate_states()
+        self.terminal_idx = [self.states.index(s_terminal) for s_terminal in self.s_end]
+        self.trans_mat = self.set_transition_matrix()
 
     def scale_features(self):
         self.features = (np.array(self.features) - self.min_value) / (self.max_value - self.min_value)
@@ -33,6 +34,7 @@ class AssemblyTask:
     def set_end_state(self, user_demo):
         terminal_state = list(np.bincount(user_demo))
 
+        s_end = []
         for curr_a in self.actions:
             _, prev_s = self.back_transition(terminal_state, curr_a)
             if prev_s:
@@ -41,20 +43,27 @@ class AssemblyTask:
                 for prev_a in set(rem_actions):
                     _, s = self.back_transition(prev_s, prev_a)
                     if s:
-                        self.s_end.append(terminal_state + [curr_a, prev_a])
+                        s_end.append(terminal_state + [curr_a, prev_a])
+
+        return s_end
 
     def enumerate_states(self):
-        prev_states = self.states.copy()
+
+        all_states = [self.s_start]
+        prev_states = all_states.copy()
+
         while prev_states:
             next_states = []
             for state in prev_states:
                 for action in self.actions:
                     p, next_state = self.transition(state, action)
-                    if next_state and (next_state not in next_states) and (next_state not in self.states):
+                    if next_state and (next_state not in next_states) and (next_state not in all_states):
                         next_states.append(next_state)
 
             prev_states = next_states
-            self.states += prev_states
+            all_states += prev_states
+
+        return all_states
 
     def enumerate_trajectories(self, demos):
 
@@ -75,9 +84,6 @@ class AssemblyTask:
         all_traj = np.array(all_traj)
 
         return all_traj[:, 1:, :]
-
-    def set_terminal_idx(self):
-        self.terminal_idx = [self.states.index(s_terminal) for s_terminal in self.s_end]
 
     def get_features(self, state, new_feature=False):
 
@@ -100,21 +106,12 @@ class AssemblyTask:
             c_part, c_tool = 0.0, 0.0
 
         _, n_features = np.shape(self.features)
-        # feature_value = [phase * e_p, phase * e_m, c_part, c_tool]
         if n_features > 2:
             feature_value = [phase * e_p, phase * e_m, (1.0 - phase) * e_p, (1.0 - phase) * e_m, c_tool, c_part,
                              self.features[curr_a][2]]
         else:
-            feature_value = [phase * e_p, phase * e_m, (1.0 - phase) * e_p, (1.0 - phase) * e_m, c_tool]
+            feature_value = [phase * e_p, phase * e_m, (1.0 - phase) * e_p, (1.0 - phase) * e_m, c_tool, c_part]
 
-        if new_feature:
-            if curr_a == 0 and state[1] == 0:
-                s_part = 1.0
-            elif curr_a == 1 and state[0] == 1:
-                s_part = 1.0
-            else:
-                s_part = 0.0
-            feature_value += [s_part]
         feature_value = np.array(feature_value)
 
         # n_actions, n_features = np.array(action_features).shape
@@ -156,6 +153,18 @@ class AssemblyTask:
                 previous_states.append(previous_state)
 
         return previous_states
+
+    def set_transition_matrix(self):
+        trans_mat = []
+        n_states, n_actions = len(self.states), len(self.actions)
+        for i in range(n_states):
+            t_mat_s = []
+            for j in range(n_actions):
+                p, ns = self.transition(self.states[i], j)
+                t_mat_s.append((p, ns))
+            trans_mat.append(t_mat_s)
+
+        return trans_mat
 
 
 # ----------------------------------------------- Canonical Task ----------------------------------------------------- #
