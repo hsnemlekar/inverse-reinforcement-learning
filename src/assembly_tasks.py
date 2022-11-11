@@ -18,7 +18,7 @@ class AssemblyTask:
 
         self.states = self.enumerate_states()
         self.terminal_idx = [self.states.index(s_terminal) for s_terminal in self.s_end]
-        self.trans_mat = self.set_transition_matrix()
+        self.trans_prob_mat, self.trans_state_mat = self.set_transition_matrix()
 
     def scale_features(self):
         self.features = (np.array(self.features) - self.min_value) / (self.max_value - self.min_value)
@@ -87,6 +87,8 @@ class AssemblyTask:
 
     def get_features(self, state, new_feature=False):
 
+        space_required = [6.5, 5.5, 4, 4, 4, 4, 2.5, 3.5]
+
         # calculate current phase
         terminal_state = self.s_end[-1]
         max_phase = sum(terminal_state[:-2])
@@ -107,8 +109,9 @@ class AssemblyTask:
 
         _, n_features = np.shape(self.features)
         if n_features > 2:
+            c_space = space_required[curr_a]  # self.features[curr_a][2]
             feature_value = [phase * e_p, phase * e_m, (1.0 - phase) * e_p, (1.0 - phase) * e_m, c_tool, c_part,
-                             self.features[curr_a][2]]
+                             phase * c_space, (1.0 - phase) * c_space]
         else:
             feature_value = [phase * e_p, phase * e_m, (1.0 - phase) * e_p, (1.0 - phase) * e_m, c_tool, c_part]
 
@@ -155,16 +158,23 @@ class AssemblyTask:
         return previous_states
 
     def set_transition_matrix(self):
-        trans_mat = []
+
+        probs_mat, trans_mat = [], []
         n_states, n_actions = len(self.states), len(self.actions)
         for i in range(n_states):
-            t_mat_s = []
+            p_mat_s, t_mat_s = [], []
             for j in range(n_actions):
                 p, ns = self.transition(self.states[i], j)
-                t_mat_s.append((p, ns))
+                if ns:
+                    int_ns = self.states.index(ns)
+                else:
+                    int_ns = -1
+                p_mat_s.append(p)
+                t_mat_s.append(int_ns)
+            probs_mat.append(p_mat_s)
             trans_mat.append(t_mat_s)
 
-        return trans_mat
+        return probs_mat, trans_mat
 
 
 # ----------------------------------------------- Canonical Task ----------------------------------------------------- #

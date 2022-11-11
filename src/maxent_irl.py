@@ -93,7 +93,10 @@ def compute_expected_svf_using_rollouts(task, reward, max_iters=10):
     states, actions, terminal = task.states, task.actions, task.terminal_idx
     n_states, n_actions = len(states), len(actions)
 
-    qf, vf, _ = value_iteration(states, actions, task.trans_mat, reward, terminal)
+    qf, vf, _ = value_iteration(np.array(actions),
+                                np.array(task.trans_prob_mat),
+                                np.array(task.trans_state_mat),
+                                np.array(reward), np.array(terminal))
     svf = np.zeros(n_states)
 
     for _ in range(max_iters):
@@ -324,7 +327,7 @@ def predict_trajectory(qf, states, demos, transition_function, sensitivity=0, co
 
 # ------------------------------------------------- Contribution ---------------------------------------------------- #
 
-def online_predict_trajectory(task, demos, weights, features, add_features, pref, optim, init,
+def online_predict_trajectory(task, demos, weights, features, add_features, pref, optim, init, init_add,
                               user_id, sensitivity=0, consider_options=False):
 
     # assume the same starting state and available actions for all users
@@ -335,20 +338,20 @@ def online_predict_trajectory(task, demos, weights, features, add_features, pref
 
     # priors = np.ones(len(samples)) / len(samples)
     rewards = features.dot(weights)
-    qf, _, _ = value_iteration(task.states, task.actions, task.trans_mat, rewards, task.terminal_idx, delta=1e-3)
+    qf, _, _ = value_iteration(np.array(task.actions),
+                               np.array(task.trans_prob_mat),
+                               np.array(task.trans_state_mat),
+                               np.array(rewards), np.array(task.terminal_idx))
 
     # maintain running avg
     running_acc = []
-    # p_score, _, _ = predict_trajectory(qf, task.states, demos, task.transition, sensitivity=0.0, consider_options=False)
+    # p_score, _, _ = predict_trajectory(qf, task.states, demos,
+    #                                    task.transition, sensitivity=0.0, consider_options=False)
     # running_acc.append(np.mean(p_score))
 
     up_weights = []
     scores, predictions, options = [], [], []
     for step, take_action in enumerate(demo):
-
-        # # compute policy for current estimate of weights
-        # rewards = features.dot(weights)
-        # qf, _, _ = value_iteration(task.states, task.actions, task.transition, rewards, task.terminal_idx, delta=1e-2)
 
         # anticipate user action in current state
         max_action_val = -np.inf
@@ -396,21 +399,26 @@ def online_predict_trajectory(task, demos, weights, features, add_features, pref
             # c = dp / (qf[s][predict_action] - qf[s][take_action])
 
             print("Step:", step, "Score:", np.mean(score), "dp:", dp, "dq:", qf[s][predict_action] - qf[s][take_action])
-            if dp > 6:
+            if dp > 1:
 
-                if "part" in pref:
-                    pref.remove("part")
-                    features = np.hstack((features, add_features[:, -2:-1]))
-                    print("Added new feature - part.")
-                elif "space" in pref:
-                    pref.remove("space")
-                    features = np.hstack((features, add_features[:, -1:]))
-                    print("Added new feature - space.")
-
-                # features = add_features
+                # if "space" in pref:
+                # if dp > 6:
+                #     features = add_features
+                #     print("Added space feature.")
 
                 _, n_features = np.shape(features)
-                prev_weights = init(n_features)
+                prev_weights = init_add(n_features)
+                # prev_weights = init(n_features)
+
+                # if "part" in pref:
+                #     pref.remove("part")
+                #     features = np.hstack((features, add_features[:, -2:-1]))
+                #     print("Added new feature - part.")
+                # elif "space" in pref:
+                #     pref.remove("space")
+                #     features = np.hstack((features, add_features[:, -1:]))
+                #     print("Added new feature - space.")
+                print("")
             else:
                 prev_weights = deepcopy(weights)
 
@@ -457,14 +465,16 @@ def online_predict_trajectory(task, demos, weights, features, add_features, pref
             # print("Re-learning weights ...")
 
             init_weights = prev_weights  # init(n_features)
-            _, new_weights = maxent_irl(task, features, intended_trajectories, optim, init_weights, eps=1e-2)
+            _, new_weights = maxent_irl(task, features, intended_trajectories, deepcopy(optim), init_weights, eps=1e-2)
             print("Updated weights from", weights, "to", new_weights)
             weights = deepcopy(new_weights)
 
             # compute policy for current estimate of weights
             rewards = features.dot(weights)
-            qf, _, _ = value_iteration(task.states, task.actions, task.trans_mat, rewards, task.terminal_idx,
-                                       delta=1e-3)
+            qf, _, _ = value_iteration(np.array(task.actions),
+                                       np.array(task.trans_prob_mat),
+                                       np.array(task.trans_state_mat),
+                                       np.array(rewards), np.array(task.terminal_idx))
 
         #     p_score, _, _ = predict_trajectory(qf, task.states, demos, task.transition, sensitivity=0.0,
         #                                        consider_options=False)

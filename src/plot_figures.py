@@ -145,9 +145,9 @@ if sim:
     random5_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy4.csv")
 else:
     file_path = dir_path + "/results/hri_post/"
-    predict1_scores = np.loadtxt(file_path + "predict20_maxent_new_0.6.csv")
-    predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_0.8.csv")
-    random1_scores = np.loadtxt(file_path + "random20_weights_new_online_0.8.csv")
+    predict1_scores = np.loadtxt(file_path + "predict20_maxent_new_online_2.4.csv")
+    predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_add_2.4.csv")
+    random1_scores = np.loadtxt(file_path + "random20_weights_new_0.6.csv")
     random2_scores = np.loadtxt(file_path + "random20_weights_new_online_0.8.csv")
     # file_path = dir_path + "/results/corl/"
     # predict1_scores = np.loadtxt(file_path + "predict22_maxent_new_online.csv")
@@ -274,18 +274,24 @@ if not sim:
         # predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
         # random1_scores = [s for i, s in enumerate(random1_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
         # random2_scores = [s for i, s in enumerate(random2_scores) if i in [2, 5, 7, 10, 11, 12, 13, 14, 15, 17]]
+        # predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [0, 5, 7, 10, 15, 17, 19]]
+        # predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [0, 5, 7, 10, 15, 17, 19]]
+        # random1_scores = [s for i, s in enumerate(random1_scores) if i in [0, 5, 7, 10, 15, 17, 19]]
+        # random2_scores = [s for i, s in enumerate(random2_scores) if i in [0, 5, 7, 10, 15, 17, 19]]
 
         # Split for comparing to random prior
-        predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
-        predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
-        random1_scores = [s for i, s in enumerate(random1_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
-        random2_scores = [s for i, s in enumerate(random2_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
+        # predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
+        # predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
+        # random1_scores = [s for i, s in enumerate(random1_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
+        # random2_scores = [s for i, s in enumerate(random2_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
 
         # All users
         # predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
         # predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
         # random1_scores = [s for i, s in enumerate(random1_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
         # random2_scores = [s for i, s in enumerate(random2_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
+        print("no change")
+
     # else:
     #     predict1_scores = predict1_scores[3:, :]
     #     predict2_scores = predict2_scores[3:, :]
@@ -393,7 +399,7 @@ if plot_bar:
         # Y = list(predict1_users) + list(predict2_users)
         sns.barplot(x=X, y=Y, ci=68, errwidth=2, capsize=.1, palette=["b", cp[1], "g", cp[1]])
         # sns.boxplot(x=X, y=Y)  # ci=68, errwidth=2, capsize=.1)
-        plt.ylim(0.4, 0.8)
+        plt.ylim(0.4, 0.9)
         plt.xticks(fontsize=18)
         plt.yticks(fontsize=16)
         plt.ylabel("Accuracy", fontsize=18)

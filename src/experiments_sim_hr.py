@@ -64,8 +64,8 @@ test_canonical = False
 test_complex = False
 
 # select samples
-n_train_samples = 25
-n_test_samples = 4
+n_train_samples = 20
+n_test_samples = 10
 
 # -------------------------------------------------- Load data ------------------------------------------------------ #
 
@@ -84,7 +84,28 @@ save_path = "results/hri_post/"
 # users to consider for evaluation
 if not follow_up:
     users = [7, 8, 9, 10, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
-    pref = []
+
+    # additional features considered by each user
+    pref = [[],
+            [],
+            [],
+            [],
+            [],
+            ["space"],
+            [],
+            ["space"],
+            [],
+            [],
+            ["space"],
+            ["space"],
+            [],
+            [],
+            [],
+            ["space"],
+            [],
+            ["space"],
+            [],
+            ["space"]]
 else:
     users = [31, 32, 33, 34, 35, 36, 37, 39, 40, 41, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
 
@@ -201,7 +222,8 @@ for ui, user_id in enumerate(users):
     init = O.Uniform()
 
     # choose our optimization strategy: exponentiated stochastic gradient descent with linear learning-rate decay
-    optim = O.ExpSga(lr=O.linear_decay(lr0=0.6))
+    learn_rate = 2.4
+    optim = O.ExpSga(lr=O.linear_decay(lr0=learn_rate))
 
     if run_maxent and not online_learning:
         print("Training using Max-Entropy IRL ...")
@@ -215,15 +237,15 @@ for ui, user_id in enumerate(users):
 
         learned_weights[ui] = [[init_weights[idx], transferred_weights[idx]] for idx in range(n_train_samples)]
 
-    elif exists(save_path + "learned_weights_0.6.csv"):
-        learned_weights = pickle.load(open(save_path + "learned_weights_0.6.csv", "rb"))
+    elif online_learning and exists(save_path + "learned_weights_uni_0.6.csv"):
+        learned_weights = pickle.load(open(save_path + "learned_weights_uni_0.6.csv", "rb"))
         transferred_weights = np.array(learned_weights[ui])[:, 1, :]
 
     else:
         print("Did not learn any weights :(")
         transferred_weights = None
 
-    print("Weights -", transferred_weights[0])
+    # print("Weights -", transferred_weights[0])
 
     # --------------------------------------- Verifying: Reproduce demo --------------------------------------------- #
 
@@ -247,29 +269,23 @@ for ui, user_id in enumerate(users):
         predict_score, p_sequences, weights_test_update, running_acc = [], [], [], []
 
         # st = time.time()
-        #
-        # print("Evaluated all weights in", time.time() - st, "secs.")
-        # print("===================================================")
-        # input("Press enter to continue.")
 
         for transferred_weight in transferred_weights:
 
             # transfer rewards over shared features
             transfer_rewards_abstract = shared_features.dot(transferred_weight)
 
-            # compute policy for transferred rewards
-            qf_transfer, _, _ = value_iteration(X.states, X.actions, X.trans_mat, transfer_rewards_abstract,
-                                                X.terminal_idx)
-
             if online_learning:
-                init = O.Uniform()
+                init = O.Constant(0.5)
+                init_add = O.Uniform()
                 for n_sample in range(n_test_samples):
                     p_score, p_sequence, _, up_weights, run_acc = online_predict_trajectory(X, complex_user_demo,
                                                                                             transferred_weight,
                                                                                             shared_features,
                                                                                             complex_features,
-                                                                                            [],
-                                                                                            optim, init,
+                                                                                            pref[ui],
+                                                                                            deepcopy(optim), init,
+                                                                                            init_add,
                                                                                             user_id,
                                                                                             sensitivity=0.0,
                                                                                             consider_options=False)
@@ -282,6 +298,13 @@ for ui, user_id in enumerate(users):
                     weights_test_update.append(test_update)
 
             else:
+                # compute policy for transferred rewards
+                qf_transfer, _, _ = value_iteration(np.array(X.actions),
+                                                    np.array(X.trans_prob_mat),
+                                                    np.array(X.trans_state_mat),
+                                                    np.array(transfer_rewards_abstract),
+                                                    np.array(X.terminal_idx))
+
                 p_score, p_sequence, _ = predict_trajectory(qf_transfer, X.states,
                                                             complex_user_demo,
                                                             X.transition,
@@ -304,17 +327,26 @@ for ui, user_id in enumerate(users):
         print("   demonstration -", complex_user_demo)
         print("     predictions -", predict_sequence)
 
+        # print("Performed tests in", time.time() - st, "secs.")
+        # print("===================================================")
+        # input("Press enter to continue.")
+
     # -------------------------------- Training: Learn weights from complex demo ------------------------------------ #
 
     if test_complex:
+
+        if exists(save_path + "learned_weights_" + str(learn_rate) + ".csv"):
+            complex_inits = pickle.load(open(save_path + "learned_weights_" + str(learn_rate) + ".csv", "rb"))
+            random_priors = np.array(complex_inits[ui])[:, 0, :]
+        else:
+            random_priors = []
+
         complex_weights = []
-        for iw, _ in learned_weights[ui]:
+        for iw in random_priors:
             _, complex_w = maxent_irl(X, shared_features, complex_trajectories, deepcopy(optim), deepcopy(iw))
             complex_weights.append(complex_w)
 
         true_weights[ui] = complex_weights
-
-        pickle.dump(true_weights, open(save_path + "true_weights_0.6.csv", "wb"))
 
     # ----------------------------------------- Testing: Random baselines ------------------------------------------- #
 
@@ -329,13 +361,13 @@ for ui, user_id in enumerate(users):
         # weight_idx = np.random.choice(range(len(weight_samples)), size=n_test_samples)
         # random_weights = weight_samples[weight_idx]
 
-        if exists(save_path + "learned_weights_0.6.csv"):
-            canonical_inits = pickle.load(open(save_path + "learned_weights_0.6.csv", "rb"))
+        if online_learning and exists(save_path + "learned_weights_" + str(learn_rate) + ".csv"):
+            canonical_inits = pickle.load(open(save_path + "learned_weights_" + str(learn_rate) + ".csv", "rb"))
             random_priors = np.array(canonical_inits[ui])[:, 0, :]
         else:
             random_priors = []
 
-        init_prior = O.Uniform()
+        init_prior = O.Constant(0.5)  # Uniform()
 
         random_score, weights_rand_update, running_acc = [], [], []
         max_likelihood = - np.inf
@@ -344,6 +376,7 @@ for ui, user_id in enumerate(users):
                 random_weight = random_priors[n_sample]
             else:
                 random_weight = init_prior(n_shared_features)
+
             random_rewards = shared_features.dot(random_weight)
 
             if online_learning:
@@ -364,7 +397,11 @@ for ui, user_id in enumerate(users):
                     rand_update += up_r_weights
                     weights_rand_update.append(rand_update)
             else:
-                qf_random, _, _ = value_iteration(X.states, X.actions, X.transition, random_rewards, X.terminal_idx)
+                qf_random, _, _ = value_iteration(np.array(X.actions),
+                                                  np.array(X.trans_prob_mat),
+                                                  np.array(X.trans_state_mat),
+                                                  np.array(random_rewards),
+                                                  np.array(X.terminal_idx))
                 r_score, predict_sequence, _ = predict_trajectory(qf_random, X.states,
                                                                   complex_user_demo,
                                                                   X.transition,
@@ -385,18 +422,36 @@ for ui, user_id in enumerate(users):
 
 # -------------------------------------------------- Save results --------------------------------------------------- #
 
+if test_complex:
+    pickle.dump(true_weights, open(save_path + "true_weights_" + str(learn_rate) + ".csv", "wb"))
+
 if run_maxent:
-    # pickle.dump(learned_weights, open(save_path + "learned_weights_0.6.csv", "wb"))
-    pickle.dump(updated_weights, open(save_path + "updated_weights_0.6.csv", "wb"))
-    np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_online_0.6.csv", predict_scores)
-    pickle.dump(predicted_sequences, open(save_path + "sequence" + str(n_users) + "_maxent_new_online_0.6.csv", "wb"))
+    if not online_learning:
+        pickle.dump(learned_weights, open(save_path + "learned_weights_" + str(learn_rate) + ".csv", "wb"))
+        np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_" + str(learn_rate) + ".csv", predict_scores)
+        pickle.dump(predicted_sequences, open(save_path + "sequence" + str(n_users) + "_maxent_new_"
+                                              + str(learn_rate) + ".csv", "wb"))
+    else:
+        pickle.dump(updated_weights, open(save_path + "updated_weights_onall_new_" + str(learn_rate) + ".csv", "wb"))
+        np.savetxt(save_path + "predict" + str(n_users) + "_maxent_new_onall_new_" + str(learn_rate) + ".csv",
+                   predict_scores)
+        pickle.dump(predicted_sequences, open(save_path + "sequence" + str(n_users) + "_maxent_new_onall_new_"
+                                              + str(learn_rate) + ".csv", "wb"))
 
 if run_random_actions:
     np.savetxt(save_path + "random" + str(n_users) + "_actions.csv", random1_scores)
 
 if run_random_weights:
-    pickle.dump(updated_rand_weights, open(save_path + "updated_rand_weights_0.6.csv", "wb"))
-    np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online_0.6.csv", random2_scores)
-    np.savetxt(save_path + "worst" + str(n_users) + "_online_rand_add_0.6.csv", worst_scores)
+    if not online_learning:
+        # pickle.dump(updated_rand_weights,
+        #             open(save_path + "rand_weights_uni_" + str(learn_rate) + ".csv", "wb"))
+        np.savetxt(save_path + "random" + str(n_users) + "_weights_uni_" + str(learn_rate) + ".csv",
+                   random2_scores)
+    else:
+        pickle.dump(updated_rand_weights,
+                    open(save_path + "updated_rand_weights_new_" + str(learn_rate) + ".csv", "wb"))
+        np.savetxt(save_path + "random" + str(n_users) + "_weights_new_online_" + str(learn_rate) + ".csv",
+                   random2_scores)
+        # np.savetxt(save_path + "worst" + str(n_users) + "_online_rand_add_0.6.csv", worst_scores)
 
 print("Done.")
