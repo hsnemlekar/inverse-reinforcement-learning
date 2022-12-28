@@ -144,11 +144,11 @@ if sim:
     predict5_scores = np.loadtxt(file_path + "predict20_maxent_new_online_noisy4.csv")
     random5_scores = np.loadtxt(file_path + "random20_weights_new_online_noisy4.csv")
 else:
-    file_path = dir_path + "/results/hri_post/"
-    predict1_scores = np.loadtxt(file_path + "predict20_maxent_new_online_2.4.csv")
-    predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_add_2.4.csv")
-    random1_scores = np.loadtxt(file_path + "random20_weights_new_0.6.csv")
-    random2_scores = np.loadtxt(file_path + "random20_weights_new_online_0.8.csv")
+    file_path = dir_path + "/results/new/"
+    predict1_scores = np.loadtxt(file_path + "predict20_maxent_new_0.6.csv")
+    predict2_scores = np.loadtxt(file_path + "predict20_maxent_new_online_0.6.csv")
+    random1_scores = np.loadtxt(file_path + "random20_weights_new_2.4.csv")
+    random2_scores = np.loadtxt(file_path + "fixed20_weights_new_online_0.6.csv")
     # file_path = dir_path + "/results/corl/"
     # predict1_scores = np.loadtxt(file_path + "predict22_maxent_new_online.csv")
     # predict2_scores = np.loadtxt(file_path + "predict22_maxent_new_online_add.csv")
@@ -286,11 +286,11 @@ if not sim:
         # random2_scores = [s for i, s in enumerate(random2_scores) if i in [2, 3, 5, 7, 8, 10, 11, 13, 14, 15, 16, 17, 18]]
 
         # All users
-        # predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
-        # predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
-        # random1_scores = [s for i, s in enumerate(random1_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
-        # random2_scores = [s for i, s in enumerate(random2_scores) if i in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]]
-        print("no change")
+        predict1_scores = [s for i, s in enumerate(predict1_scores) if i in [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 17, 18, 19]]
+        predict2_scores = [s for i, s in enumerate(predict2_scores) if i in [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 17, 18, 19]]
+        random1_scores = [s for i, s in enumerate(random1_scores) if i in [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 17, 18, 19]]
+        random2_scores = [s for i, s in enumerate(random2_scores) if i in [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16, 17, 18, 19]]
+        # print("no change")
 
     # else:
     #     predict1_scores = predict1_scores[3:, :]
@@ -343,15 +343,15 @@ if sim:
           np.mean(random3_users), stats.sem(random3_users),
           stats.ttest_rel(predict3_users, random3_users))
 else:
-    # print("random:", np.mean(predict1_users), stats.sem(predict1_users),
-    #       np.mean(random1_users), stats.sem(random1_users),
-    #       stats.ttest_rel(predict1_users, random1_users))
+    print(" prior:", np.mean(predict1_users), stats.sem(predict1_users),
+          np.mean(random1_users), stats.sem(random1_users),
+          stats.ttest_rel(predict1_users, random1_users))
     print("online:", np.mean(predict1_users), stats.sem(predict1_users),
           np.mean(predict2_users), stats.sem(predict2_users),
           stats.ttest_rel(predict1_users, predict2_users))
-    # print(" prior:", np.mean(predict1_users), stats.sem(predict1_users),
-    #       np.mean(random2_users), stats.sem(random2_users),
-    #       stats.ttest_rel(predict1_users, random2_users))
+    print("random:", np.mean(predict2_users), stats.sem(predict2_users),
+          np.mean(random2_users), stats.sem(random2_users),
+          stats.ttest_rel(predict2_users, random2_users))
 
 plot_bar = True
 cp = sns.color_palette()
@@ -399,7 +399,7 @@ if plot_bar:
         # Y = list(predict1_users) + list(predict2_users)
         sns.barplot(x=X, y=Y, ci=68, errwidth=2, capsize=.1, palette=["b", cp[1], "g", cp[1]])
         # sns.boxplot(x=X, y=Y)  # ci=68, errwidth=2, capsize=.1)
-        plt.ylim(0.4, 0.9)
+        plt.ylim(0.6, 0.9)
         plt.xticks(fontsize=18)
         plt.yticks(fontsize=16)
         plt.ylabel("Accuracy", fontsize=18)

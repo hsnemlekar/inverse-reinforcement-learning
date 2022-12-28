@@ -399,7 +399,7 @@ def online_predict_trajectory(task, demos, weights, features, add_features, pref
             # c = dp / (qf[s][predict_action] - qf[s][take_action])
 
             print("Step:", step, "Score:", np.mean(score), "dp:", dp, "dq:", qf[s][predict_action] - qf[s][take_action])
-            if dp > 1:
+            if dp > 4:
 
                 # if "space" in pref:
                 # if dp > 6:
